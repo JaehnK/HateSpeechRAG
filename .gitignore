@@ -203,3 +203,4 @@ __marimo__/
 .streamlit/secrets.toml
 
 korean_unsmile_dataset/*
+korean_unsmile_dataset/
