@@ -205,5 +205,5 @@ __marimo__/
 korean_unsmile_dataset/*
 korean_unsmile_dataset/
 
-hate_speech_db/*
-hate_speech_db/
+hate_speech_vectorstore/*
+hate_speech_vectorstore/

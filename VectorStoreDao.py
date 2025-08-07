@@ -37,23 +37,53 @@ class VectorStoreDao:
         # 디렉토리 생성
         os.makedirs(self.persist_directory, exist_ok=True)
     
-    def create_vector_store(self, documents: Optional[List[Document]] = None) -> None:
+    def create_vector_store(self, documents: Optional[List[Document]] = None, force_recreate: bool = False) -> None:
         """
         벡터스토어 생성 또는 기존 로드
         
         Args:
             documents: 초기 문서 리스트 (새로 생성 시)
+            force_recreate: 기존 컬렉션이 있어도 강제로 재생성할지 여부
         """
         if documents:
-            # 새로운 벡터스토어 생성
-            self.vector_store = Chroma.from_documents(
-                documents=documents,
-                embedding=self.embedding_model.embedding_model,
-                persist_directory=self.persist_directory,
-                collection_name=self.collection_name
-            )
-            self.documents = documents.copy()
-            print(f"새로운 벡터스토어 생성 완료: {len(documents)}개 문서")
+            try:
+                # 기존 컬렉션 확인 및 임베딩 차원 호환성 검사
+                if not force_recreate:
+                    try:
+                        temp_store = Chroma(
+                            persist_directory=self.persist_directory,
+                            embedding_function=self.embedding_model.embedding_model,
+                            collection_name=self.collection_name
+                        )
+                        # 기존 컬렉션의 임베딩 차원 확인
+                        existing_dim = self._get_existing_embedding_dimension(temp_store)
+                        current_dim = self._get_current_embedding_dimension()
+                        
+                        if existing_dim and current_dim and existing_dim != current_dim:
+                            print(f"임베딩 차원 불일치")
+                            print(f"   기존: {existing_dim}차원, 현재: {current_dim}차원")
+                            print("   기존 컬렉션을 삭제하고 새로 생성합니다...")
+                            temp_store.delete_collection()
+                            force_recreate = True
+                        else:
+                            print("기존 컬렉션과 호환 가능합니다.")
+                    except Exception:
+                        # 기존 컬렉션이 없거나 오류 시 새로 생성
+                        force_recreate = True
+                
+                # 새로운 벡터스토어 생성
+                self.vector_store = Chroma.from_documents(
+                    documents=documents,
+                    embedding=self.embedding_model.embedding_model,
+                    persist_directory=self.persist_directory,
+                    collection_name=self.collection_name
+                )
+                self.documents = documents.copy()
+                print(f"새로운 벡터스토어 생성 완료: {len(documents)}개 문서")
+                
+            except Exception as e:
+                print(f"벡터스토어 생성 실패: {e}")
+                raise
         else:
             # 기존 벡터스토어 로드
             try:
@@ -71,6 +101,29 @@ class VectorStoreDao:
                     persist_directory=self.persist_directory,
                     collection_name=self.collection_name
                 )
+    
+    def _get_existing_embedding_dimension(self, vector_store) -> Optional[int]:
+        """기존 벡터스토어의 임베딩 차원 확인"""
+        try:
+            collection = vector_store._collection
+            if collection.count() == 0:
+                return None
+            result = collection.get(limit=1, include=['embeddings'])
+            if result['embeddings'] and len(result['embeddings']) > 0:
+                return len(result['embeddings'][0])
+        except Exception:
+            pass
+        return None
+    
+    def _get_current_embedding_dimension(self) -> Optional[int]:
+        """현재 임베딩 모델의 차원 확인"""
+        try:
+            # 테스트 텍스트로 임베딩 차원 확인
+            test_embedding = self.embedding_model.embedding_model.embed_query("test")
+            return len(test_embedding)
+        except Exception:
+            return None
+    
     
     def add_documents(self, documents: List[Document]) -> None:
         """
@@ -246,14 +299,6 @@ class VectorStoreDao:
         except Exception as e:
             return {"error": f"정보 조회 실패: {e}"}
     
-    def persist(self) -> None:
-        """
-        벡터스토어 영구 저장
-        """
-        if self.vector_store:
-            self.vector_store.persist()
-            print("벡터스토어 저장 완료")
-    
     def clear_collection(self) -> None:
         """
         컬렉션 초기화 (모든 문서 삭제)
@@ -267,7 +312,6 @@ class VectorStoreDao:
             print("컬렉션 초기화 완료")
         except Exception as e:
             print(f"컬렉션 초기화 실패: {e}")
-
 
 # 사용 예시
 if __name__ == "__main__":
