@@ -144,7 +144,7 @@ class VectorStoreDao:
         self, 
         query: str, 
         k: int = 5,
-        retriever_type: str = "basic",
+        retriever_type: str = "mmr",
         **retriever_kwargs
     ) -> List[Document]:
         """

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Optional, Any
+from typing import List, Any
 from langchain.schema import Document
 from langchain.retrievers import EnsembleRetriever
 from langchain_community.retrievers import BM25Retriever
@@ -17,6 +17,7 @@ class BaseRetriever(ABC):
         self.vector_store = vector_store
         self.k = k
         self._retriever = None
+        self._type = None
     
     @abstractmethod
     def _build_retriever(self) -> Any:
@@ -46,9 +47,11 @@ class BaseRetriever(ABC):
         점수와 함께 문서 검색 (지원하는 경우)
         """
         if hasattr(self.retriever, 'similarity_search_with_score'):
+            print(f"{self._type} Retriever: Retreive with scores")
             return self.retriever.similarity_search_with_score(query, k=self.k)
         else:
             # 점수가 없는 경우 기본 검색 결과 반환
+            print(f"{self._type} Retriever: Invoke without Score")
             docs = self.retrieve(query)
             return [(doc, 0.0) for doc in docs]
 
@@ -61,6 +64,7 @@ class VectorStoreRetriever(BaseRetriever):
     def __init__(self, vector_store: VectorStore, k: int = 5, search_type: str = "similarity"):
         super().__init__(vector_store, k)
         self.search_type = search_type
+        self._type = "VectorStore"
     
     def _build_retriever(self) -> Any:
         """
@@ -70,7 +74,19 @@ class VectorStoreRetriever(BaseRetriever):
             search_type=self.search_type,
             search_kwargs={"k": self.k}
         )
-
+    
+    def retrieve_with_scores(self, query: str) -> List[tuple]:
+        """
+        벡터스토어에서 직접 점수와 함께 검색
+        """
+        try:
+            results = self.vector_store.similarity_search_with_score(query, k=self.k)
+            print(f"{self._type} Retriever: Retrieved with scores")
+            return results
+        except Exception as e:
+            print(f"{self._type} Retriever: Error getting scores - {e}")
+            docs = self.retrieve(query)
+            return [(doc, 0.0) for doc in docs]
 
 class MMRRetriever(BaseRetriever):
     """
@@ -81,6 +97,7 @@ class MMRRetriever(BaseRetriever):
         super().__init__(vector_store, k)
         self.fetch_k = fetch_k
         self.lambda_mult = lambda_mult
+        self._type = "mmr"
     
     def _build_retriever(self) -> Any:
         """
@@ -95,7 +112,6 @@ class MMRRetriever(BaseRetriever):
             }
         )
 
-
 class EnsembleRetrieverWrapper(BaseRetriever):
     """
     앙상블 리트리버 (BM25 + Dense Vector)
@@ -105,6 +121,7 @@ class EnsembleRetrieverWrapper(BaseRetriever):
         super().__init__(vector_store, k)
         self.documents = documents
         self.weights = weights or [0.7, 0.3]  # Dense 70%, BM25 30%
+        self._type = "ensemble"
     
     def _build_retriever(self) -> Any:
         """
@@ -125,7 +142,6 @@ class EnsembleRetrieverWrapper(BaseRetriever):
         
         return ensemble_retriever
 
-
 class SelfQueryRetrieverWrapper(BaseRetriever):
     """
     Self Query 리트리버 (메타데이터 기반 필터링)
@@ -134,6 +150,7 @@ class SelfQueryRetrieverWrapper(BaseRetriever):
     def __init__(self, vector_store: VectorStore, llm: Any, k: int = 5):
         super().__init__(vector_store, k)
         self.llm = llm
+        self._type = "self_query"
     
     def _build_retriever(self) -> Any:
         """

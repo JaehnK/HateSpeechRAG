@@ -5,16 +5,12 @@ from typing import Dict, List, Optional, Any, Union
 from dataclasses import dataclass, asdict
 from enum import Enum
 import os
+from dotenv import load_dotenv
 
 # LangChain imports
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.prompts import PromptTemplate
-from langchain.output_parsers import PydanticOutputParser
-from langchain.schema.runnable import RunnablePassthrough
-from pydantic import BaseModel, Field
-from langchain_core.runnables import RunnableLambda
 
 class LLMProvider(Enum):
     """
@@ -111,6 +107,8 @@ class LLMServiceFactory:
         **kwargs
     ) -> BaseLLMService:
         """LLM 서비스 생성"""
+        load_dotenv()
+        
         if isinstance(provider, str):
             provider = LLMProvider(provider.lower())
         
