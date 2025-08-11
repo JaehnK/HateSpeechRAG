@@ -140,59 +140,65 @@ class VectorStoreDao:
         self.documents.extend(documents)
         print(f"{len(documents)}개 문서 추가 완료")
     
-    def retrieve_documents(
+    def initialize_retriever(
         self, 
-        query: str, 
+        retriever_type: str, 
         k: int = 5,
-        retriever_type: str = "mmr",
         **retriever_kwargs
-    ) -> List[Document]:
+    ) -> None:
         """
-        문서 검색
+        리트리버를 초기화하고 DAO 내에 저장합니다.
+        이 메서드는 벡터스토어가 생성된 후, 검색을 수행하기 전에 한 번만 호출해야 합니다.
+        
+        Args:
+            retriever_type: 리트리버 타입
+            k: 검색할 문서 수
+            **retriever_kwargs: 리트리버별 추가 파라미터
+        """
+        if not self.vector_store:
+            raise ValueError("벡터스토어가 초기화되지 않았습니다. create_vector_store()를 먼저 호출하세요.")
+
+        if retriever_type == "ensemble" and "documents" not in retriever_kwargs:
+            retriever_kwargs["documents"] = self.documents
+        
+        self.retriever = RetrieverFactory.create_retriever(
+            retriever_type=retriever_type,
+            vector_store=self.vector_store,
+            k=k,
+            **retriever_kwargs
+        )
+        print(f"리트리버 초기화 완료: {retriever_type} (k={k})")
+
+    def retrieve_documents(self, query: str) -> List[Document]:
+        """
+        초기화된 리트리버를 사용하여 문서를 검색합니다.
         
         Args:
             query: 검색 쿼리
-            k: 반환할 문서 수
-            retriever_type: 리트리버 타입 ('basic', 'mmr', 'ensemble', 'self_query')
-            **retriever_kwargs: 리트리버별 추가 파라미터
         
         Returns:
             검색된 문서 리스트
         """
-        if not self.vector_store:
-            raise ValueError("벡터스토어가 초기화되지 않았습니다. create_vector_store()를 먼저 호출하세요.")
+        if not self.retriever:
+            raise ValueError("리트리버가 초기화되지 않았습니다. initialize_retriever()를 먼저 호출하세요.")
         
-        # 리트리버 설정
-        self.set_retriever(retriever_type, k, **retriever_kwargs)
-        
-        # 검색 실행
         return self.retriever.retrieve(query)
-    
-    def retrieve_with_scores(
-        self, 
-        query: str, 
-        k: int = 5,
-        retriever_type: str = "basic",
-        **retriever_kwargs
-    ) -> List[tuple]:
+
+    def retrieve_with_scores(self, query: str) -> List[tuple]:
         """
-        점수와 함께 문서 검색
+        초기화된 리트리버를 사용하여 점수와 함께 문서를 검색합니다.
         
         Args:
             query: 검색 쿼리
-            k: 반환할 문서 수
-            retriever_type: 리트리버 타입
-            **retriever_kwargs: 리트리버별 추가 파라미터
         
         Returns:
             (문서, 점수) 튜플 리스트
         """
-        if not self.vector_store:
-            raise ValueError("벡터스토어가 초기화되지 않았습니다.")
+        if not self.retriever:
+            raise ValueError("리트리버가 초기화되지 않았습니다. initialize_retriever()를 먼저 호출하세요.")
         
-        self.set_retriever(retriever_type, k, **retriever_kwargs)
         return self.retriever.retrieve_with_scores(query)
-    
+
     def search_by_metadata(
         self, 
         query: str, 
@@ -240,31 +246,6 @@ class VectorStoreDao:
             k=k,
             filter={category: value}
         )
-    
-    def set_retriever(
-        self, 
-        retriever_type: str, 
-        k: int = 5, 
-        **kwargs
-    ) -> None:
-        """
-        리트리버 설정
-        
-        Args:
-            retriever_type: 리트리버 타입
-            k: 검색할 문서 수
-            **kwargs: 리트리버별 추가 파라미터
-        """
-        if retriever_type == "ensemble" and "documents" not in kwargs:
-            kwargs["documents"] = self.documents
-        
-        self.retriever = RetrieverFactory.create_retriever(
-            retriever_type=retriever_type,
-            vector_store=self.vector_store,
-            k=k,
-            **kwargs
-        )
-        print(f"리트리버 설정 완료: {retriever_type}")
     
     def delete_documents(self, document_ids: List[str]) -> None:
         """

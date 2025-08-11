@@ -8,6 +8,7 @@ from langchain_teddynote import logging
 from pydantic import BaseModel, Field
 from operator import itemgetter
 import json
+import time
 
 from VectorStoreDao import VectorStoreDao
 from Embeddings import EmbeddingModelFactory
@@ -19,17 +20,17 @@ from dotenv import load_dotenv
 class VectorStoreRetriever(Runnable):
     """VectorStoreDao를 Runnable로 래핑"""
     
-    def __init__(self, dao: 'VectorStoreDao', k: int = 3, retriever_type: str = "basic"):
+    def __init__(self, dao: 'VectorStoreDao'):
         self.dao = dao
-        self.k = k
-        self.retriever_type = retriever_type
     
     def invoke(self, input_query: str, config=None) -> List[Tuple[Document, float]]:
         """쿼리를 받아 유사 문서들을 반환"""
-        return self.dao.retrieve_with_scores(input_query, k=self.k, retriever_type=self.retriever_type)
+        return self.dao.retrieve_with_scores(input_query)
     
     def batch(self, inputs: List[str], config=None) -> List[List[Tuple[Document, float]]]:
         """배치 처리"""
+        # DAO에 캐시된 리트리버가 있으므로, 배치 호출도 효율적으로 처리될 수 있습니다.
+        # LangChain의 batch 기능을 최대한 활용하기 위해 DAO에도 batch 인터페이스를 추가하는 것을 고려할 수 있습니다.
         return [self.invoke(query, config) for query in inputs]
 
 class SimilarCasesFormatter(Runnable):
@@ -113,7 +114,7 @@ class HateSpeechRAGChain:
         self.llm = llm
         
         # Runnable 컴포넌트들 초기화
-        self.retriever = VectorStoreRetriever(dao, k=3)
+        self.retriever = VectorStoreRetriever(dao)  # 파라미터 제거
         self.formatter = SimilarCasesFormatter()
         
         # Pydantic Parser 초기화
@@ -181,9 +182,57 @@ class HateSpeechRAGChain:
         """혐오표현 분류 수행 (구조화된 결과 반환)"""
         if self.llm is None:
             raise ValueError("LLM이 설정되지 않았습니다. 분류를 위해서는 LLM이 필요합니다.")
-        
-        full_chain = self.rag_chain | self.llm | self.output_parser
-        return full_chain.invoke(text)
+
+        print("\n--- Detailed Profiling ---")
+
+        # 1. (Isolate) Query Embedding 시간 측정
+        start_time = time.time()
+        # DAO를 통해 임베딩 모델에 접근
+        _ = self.dao.embedding_model.embedding_model.embed_query(text)
+        embedding_time = time.time() - start_time
+        print(f"1. (Isolated) Query Embedding: {embedding_time:.4f} 초")
+
+        # 2. Retrieval 시간 측정 (내부적으로 임베딩 포함)
+        start_time = time.time()
+        retrieved_docs = self.retriever.invoke(text)
+        retrieval_time = time.time() - start_time
+        print(f"2. Full Retrieval (Embedding + Search): {retrieval_time:.4f} 초")
+
+        # 3. Formatting 시간 측정
+        start_time = time.time()
+        formatted_cases = self.formatter.invoke(retrieved_docs)
+        formatting_time = time.time() - start_time
+        print(f"3. Formatting: {formatting_time:.4f} 초")
+
+        # 4. Prompt 생성 시간 측정
+        start_time = time.time()
+        prompt_input = {
+            "input_text": text,
+            "similar_cases": formatted_cases,
+            "format_instructions": self.output_parser.get_format_instructions()
+        }
+        prompt = self.prompt_template.invoke(prompt_input)
+        prompt_time = time.time() - start_time
+        print(f"4. Prompt Generation: {prompt_time:.4f} 초")
+
+        # 5. LLM 호출 시간 측정
+        start_time = time.time()
+        llm_output = self.llm.invoke(prompt)
+        llm_time = time.time() - start_time
+        print(f"5. LLM Call: {llm_time:.4f} 초")
+
+        # 6. Output Parsing 시간 측정
+        start_time = time.time()
+        parsed_output = self.output_parser.invoke(llm_output)
+        parsing_time = time.time() - start_time
+        print(f"6. Output Parsing: {parsing_time:.4f} 초")
+
+        # 참고: 총 시간은 임베딩이 두 번 측정되므로 실제보다 약간 부풀려져 표시됩니다.
+        total_time = embedding_time + retrieval_time + formatting_time + prompt_time + llm_time + parsing_time
+        print(f"Total Execution Time (approx.): {total_time:.4f} 초")
+        print("-------------------------")
+
+        return parsed_output
     
     def classify_batch(self, texts: List[str]) -> List[HateSpeechClassification]:
         """배치 분류"""
@@ -387,6 +436,9 @@ if __name__ == "__main__":
         collection_name="hate_speech_collection"
     )
     dao.create_vector_store()
+    
+    # 리트리버를 명시적으로 초기화 (k=3, basic retriever)
+    dao.initialize_retriever(retriever_type="basic", k=3)
     
     llm_openai = LLMServiceFactory.create_llm_service("openai")
     
