@@ -4,12 +4,17 @@ from langchain.schema import Document
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.runnable import RunnableLambda
 from langchain.output_parsers import PydanticOutputParser
+from langchain_teddynote import logging
 from pydantic import BaseModel, Field
 from operator import itemgetter
 import json
 
 from VectorStoreDao import VectorStoreDao
 from Embeddings import EmbeddingModelFactory
+from LLMServices import LLMServiceFactory
+
+from pprint import pprint
+from dotenv import load_dotenv
 
 class VectorStoreRetriever(Runnable):
     """VectorStoreDao를 Runnable로 래핑"""
@@ -119,9 +124,7 @@ class HateSpeechRAGChain:
 당신은 혐오표현 분류 전문가입니다.
 
 === 혐오표현 정의 ===
-성별, 장애, 종교, 나이, 출신지역, 인종, 성적지향 등 특정 속성을 이유로 
-어떤 개인·집단에게 모욕, 비하, 멸시, 위협 또는 차별·폭력의 선전과 선동을 함으로써 
-차별을 정당화·조장·강화하는 효과를 갖는 표현
+성별, 장애, 종교, 나이, 출신지역, 인종, 성적지향 등 특정 속성을 이유로  어떤 개인·집단에게 모욕, 비하, 멸시, 위협 또는 차별·폭력의 선전과 선동을 함으로써 차별을 정당화·조장·강화하는 효과를 갖는 표현
 
 === 분류 카테고리 (복수 선택 가능) ===
 - 성별: 성별 기반 차별 및 비하 (예: "김치녀", "맘충")
@@ -376,16 +379,25 @@ def test_batch_processing(dao: 'VectorStoreDao') -> None:
         print(f"프롬프트 길이: {len(prompt)} 문자")
 
 if __name__ == "__main__":
-    # 사용 예시
-    # dao = VectorStoreDao(...)  # 실제 DAO 인스턴스
+    load_dotenv()
+    logging.langsmith("HateSpeechTest")
     dao = VectorStoreDao(
         persist_directory="./hate_speech_vectorstore",
         embedding_model = EmbeddingModelFactory.create_embedding_model('upstage'),
         collection_name="hate_speech_collection"
     )
     dao.create_vector_store()
-    test_rag_pipeline_with_json(dao)
-    test_individual_components(dao)
-    test_with_mock_llm(dao)
-    example_usage_with_real_llm()
-    pass
+    
+    llm_openai = LLMServiceFactory.create_llm_service("openai")
+    
+    rag_chain = HateSpeechRAGChain(
+        dao=dao,
+        llm=llm_openai.model)
+    
+    result = rag_chain.classify("우욱")
+    pprint(f"입력 텍스트: {result.input_text}")
+    pprint(f"혐오 발언 여부: {result.is_hate_speech}")
+    pprint(f"혐오 카테고리: {result.categories}")
+    pprint(f"신뢰성: {result.evidence_strength}")
+    pprint(f"추론 이유: {result.reasoning}")
+    pprint(f"혐오 타입: {result.hate_type}")

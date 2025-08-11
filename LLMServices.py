@@ -45,18 +45,20 @@ class BaseLLMService(ABC):
 class OpenAILLMService(BaseLLMService):
     """OpenAI LLM 서비스"""
     
-    def __init__(self, model_name: str = "gpt-4o-mini", **kwargs):
+    def __init__(self, model_name: str = "gpt-5", **kwargs):
         super().__init__(model_name, **kwargs)
         self.api_key = kwargs.get("api_key") or os.getenv("OPENAI_API_KEY")
         
         if not self.api_key:
             raise ValueError("OpenAI API 키가 필요합니다.")
+        
+        self._llm = self._initialize_llm()
     
     def _initialize_llm(self) -> ChatOpenAI:
         return ChatOpenAI(
             model=self.model_name,
             openai_api_key=self.api_key,
-            temperature=0.0,
+            # temperature=0,
             **self.kwargs
         )
         
@@ -113,7 +115,7 @@ class LLMServiceFactory:
             provider = LLMProvider(provider.lower())
         
         if provider == LLMProvider.OPENAI:
-            return OpenAILLMService(model_name, **kwargs)
+            return OpenAILLMService(model_name or "gpt-5", **kwargs)
         elif provider == LLMProvider.ANTHROPIC:
             return AnthropicLLMService(model_name, **kwargs)
         elif provider == LLMProvider.GOOGLE:
