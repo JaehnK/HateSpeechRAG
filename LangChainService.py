@@ -13,6 +13,7 @@ import time
 from VectorStoreDao import VectorStoreDao
 from Embeddings import EmbeddingModelFactory
 from LLMServices import LLMServiceFactory
+from HateSpeechDao import HateSpeechDBSetup
 
 from pprint import pprint
 from dotenv import load_dotenv
@@ -73,6 +74,11 @@ class SimilarCasesFormatter(Runnable):
 # Pydantic 모델 정의
 class HateSpeechClassification(BaseModel):
     """혐오표현 분류 결과"""
+    
+    prompt: Optional[str] = Field(
+        description="분류에 사용된 프롬프트",
+        default=None
+    )
     
     input_text: str = Field(description="분석 대상 텍스트")
     
@@ -232,6 +238,7 @@ class HateSpeechRAGChain:
         print(f"Total Execution Time (approx.): {total_time:.4f} 초")
         print("-------------------------")
 
+        parsed_output.prompt = prompt.to_string()
         return parsed_output
     
     def classify_batch(self, texts: List[str]) -> List[HateSpeechClassification]:
@@ -360,31 +367,6 @@ def test_with_mock_llm(dao: 'VectorStoreDao') -> None:
             import traceback
             traceback.print_exc()
 
-# 실제 사용 예시
-def example_usage_with_real_llm():
-    """실제 LLM과 함께 사용하는 예시"""
-    
-    # from langchain.llms import OpenAI
-    # llm = OpenAI(temperature=0)
-    # 
-    # rag_chain = HateSpeechRAGChain(dao, llm=llm)
-    # 
-    # # 단일 분류
-    # result: HateSpeechClassification = rag_chain.classify("김치녀들은 다 똑같아")
-    # print(f"혐오표현 여부: {result.is_hate_speech}")
-    # print(f"카테고리: {result.categories}")
-    # print(f"증거 강도: {result.evidence_strength}")
-    # print(f"근거: {result.reasoning}")
-    # 
-    # # 배치 분류
-    # texts = ["여성 비하", "일반 문장", "나이 차별"]
-    # results: List[HateSpeechClassification] = rag_chain.classify_batch(texts)
-    # 
-    # for result in results:
-    #     print(f"{result.input_text} → {result.categories}")
-    
-    pass
-
 # 개별 컴포넌트 테스트
 def test_individual_components(dao: 'VectorStoreDao') -> None:
     """개별 Runnable 컴포넌트들 테스트"""
@@ -446,10 +428,15 @@ if __name__ == "__main__":
         dao=dao,
         llm=llm_openai.model)
     
-    result = rag_chain.classify("우욱")
+    result = rag_chain.classify("여자는 못생기면 자연히키됨 사회생활 불가능이거든")
+    db_setup = HateSpeechDBSetup()
+    db_setup.create_tables()
+    db_setup.save_script(result,"test_id","test_prompt")
+    pprint(result)
     pprint(f"입력 텍스트: {result.input_text}")
     pprint(f"혐오 발언 여부: {result.is_hate_speech}")
     pprint(f"혐오 카테고리: {result.categories}")
     pprint(f"신뢰성: {result.evidence_strength}")
     pprint(f"추론 이유: {result.reasoning}")
     pprint(f"혐오 타입: {result.hate_type}")
+    pprint(f"프롬프트: {result.prompt}")

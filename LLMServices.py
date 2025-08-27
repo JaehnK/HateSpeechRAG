@@ -115,7 +115,7 @@ class LLMServiceFactory:
             provider = LLMProvider(provider.lower())
         
         if provider == LLMProvider.OPENAI:
-            return OpenAILLMService(model_name or "gpt-5", **kwargs)
+            return OpenAILLMService(model_name or "gpt-5-mini", **kwargs)
         elif provider == LLMProvider.ANTHROPIC:
             return AnthropicLLMService(model_name, **kwargs)
         elif provider == LLMProvider.GOOGLE:
