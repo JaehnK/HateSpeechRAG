@@ -535,6 +535,71 @@ class YouTubeDBSetup:
             if connection:
                 connection.close()
 
+    def get_comments_generator(self, batch_size=1000, include_analysis=True):
+        """Comments table의 요소를 제너레이터로 리턴"""
+        
+        offset = 0
+        
+        while True:
+            connection = self.get_connection()
+            if not connection:
+                break;
+        
+            try:
+                cursor = connection.cursor()
+                columns = """
+                    comment_id, video_id, author, author_channel_id, 
+                    comment_text, like_count, published_at, updated_at,
+                    reply_count, is_reply, parent_id, collection_time,
+                    is_hate_speech, categories, similar_cases_used,
+                    target_group, hate_type, used_prompt
+                """
+                query = f"""
+                SELECT {columns}
+                FROM comments 
+                ORDER BY comment_id  -- 변경되지 않는 컬럼으로 정렬
+                LIMIT %s OFFSET %s;
+                """
+                cursor.execute(query, (batch_size, offset))
+                rows = cursor.fetchall()
+                for row in rows:
+                    comment = {
+                        'comment_id': row[0],
+                        'video_id': row[1],
+                        'author': row[2],
+                        'author_channel_id': row[3],
+                        'comment_text': row[4],
+                        'like_count': row[5],
+                        'published_at': row[6],
+                        'updated_at': row[7],
+                        'reply_count': row[8],
+                        'is_reply': row[9],
+                        'parent_id': row[10],
+                        'collection_time': row[11]
+                    }
+                    
+                    if include_analysis and len(row) > 12:
+                        comment.update({
+                            'is_hate_speech': row[12],
+                            'categories': row[13],
+                            'similar_cases_used': row[14],
+                            'target_group': row[15],
+                            'hate_type': row[16],
+                            'used_prompt': row[17]
+                        })
+                    
+                    yield comment
+            
+            except Exception as e:
+                print(f"배치 {offset // batch_size + 1} 처리 실패: {e}")
+                break
+            
+            finally:
+                if cursor:
+                    cursor.close()
+                if connection:
+                    connection.close()
+
     def get_comments_by_video_id(self, video_id, verbose=True, include_analysis=True):
         """특정 video_id에 대한 댓글 조회 (분석 결과 포함)"""
         connection = self.get_connection()
@@ -706,6 +771,8 @@ class YouTubeDBSetup:
                 cursor.close()
             if connection:
                 connection.close()
+
+
 # 사용 예시
 if __name__ == "__main__":
     
