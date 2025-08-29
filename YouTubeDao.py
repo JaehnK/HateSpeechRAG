@@ -499,7 +499,42 @@ class YouTubeDBSetup:
                 cursor.close()
             if connection:
                 connection.close()
+    
+    def get_unique_video_ids(self):
+        """comments 테이블에서 중복 없는 video_id 목록 조회"""
+        connection = self.get_connection()
+        if not connection:
+            return None
         
+        try:
+            cursor = connection.cursor()
+            
+            # 중복 없는 video_id 조회
+            cursor.execute("""
+                SELECT DISTINCT video_id 
+                FROM comments 
+                WHERE video_id IS NOT NULL
+                ORDER BY video_id;
+            """)
+            
+            results = cursor.fetchall()
+            
+            # 튜플을 리스트로 변환
+            video_ids = [row[0] for row in results]
+            
+            print(f"📋 고유 비디오 ID: {len(video_ids):,}개")
+            
+            return video_ids
+            
+        except Exception as e:
+            print(f"❌ 비디오 ID 조회 실패: {e}")
+            return None
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+
     def get_comments_by_video_id(self, video_id, verbose=True, include_analysis=True):
         """특정 video_id에 대한 댓글 조회 (분석 결과 포함)"""
         connection = self.get_connection()

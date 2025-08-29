@@ -124,7 +124,6 @@ class VectorStoreDao:
         except Exception:
             return None
     
-    
     def add_documents(self, documents: List[Document]) -> None:
         """
         벡터스토어에 문서 추가

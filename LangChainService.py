@@ -250,152 +250,152 @@ class HateSpeechRAGChain:
         return full_chain.batch(texts)
 
 # 테스트 및 사용 예시
-def test_rag_pipeline_with_json(dao: 'VectorStoreDao', test_queries: List[str] = None) -> None:
-    """JSON 출력을 포함한 RAG 파이프라인 테스트"""
+# def test_rag_pipeline_with_json(dao: 'VectorStoreDao', test_queries: List[str] = None) -> None:
+#     """JSON 출력을 포함한 RAG 파이프라인 테스트"""
     
-    if test_queries is None:
-        test_queries = [
-            "여성을 비하하는 말",
-            "욕설이 포함된 문장", 
-            "깨끗한 일반 문장",
-            "나이 관련 차별 표현"
-        ]
+#     if test_queries is None:
+#         test_queries = [
+#             "여성을 비하하는 말",
+#             "욕설이 포함된 문장", 
+#             "깨끗한 일반 문장",
+#             "나이 관련 차별 표현"
+#         ]
     
-    print("=== JSON 출력 RAG 파이프라인 테스트 ===")
+#     print("=== JSON 출력 RAG 파이프라인 테스트 ===")
     
-    # RAG 체인 초기화
-    rag_chain = HateSpeechRAGChain(dao)
+#     # RAG 체인 초기화
+#     rag_chain = HateSpeechRAGChain(dao)
     
-    for query in test_queries:
-        print(f"\n{'='*50}")
-        print(f"쿼리: '{query}'")
-        print(f"{'='*50}")
+#     for query in test_queries:
+#         print(f"\n{'='*50}")
+#         print(f"쿼리: '{query}'")
+#         print(f"{'='*50}")
         
-        try:
-            # Pydantic 포맷 지침 확인
-            format_instructions = rag_chain.output_parser.get_format_instructions()
-            print(f"JSON 출력 형식:")
-            print(format_instructions[:200] + "...")
+#         try:
+#             # Pydantic 포맷 지침 확인
+#             format_instructions = rag_chain.output_parser.get_format_instructions()
+#             print(f"JSON 출력 형식:")
+#             print(format_instructions[:200] + "...")
             
-            # 완성된 프롬프트 생성 (JSON 형식 지침 포함)
-            full_prompt = rag_chain.get_prompt(query)
-            print(f"\n프롬프트 끝부분 (JSON 형식 지침):")
-            print("-" * 30)
-            print(full_prompt[-300:])  # 마지막 300자만 출력
-            print("-" * 30)
+#             # 완성된 프롬프트 생성 (JSON 형식 지침 포함)
+#             full_prompt = rag_chain.get_prompt(query)
+#             print(f"\n프롬프트 끝부분 (JSON 형식 지침):")
+#             print("-" * 30)
+#             print(full_prompt[-300:])  # 마지막 300자만 출력
+#             print("-" * 30)
             
-        except Exception as e:
-            print(f"오류 발생: {e}")
+#         except Exception as e:
+#             print(f"오류 발생: {e}")
 
-def test_with_mock_llm(dao: 'VectorStoreDao') -> None:
-    """Mock LLM으로 JSON 출력 테스트"""
+# def test_with_mock_llm(dao: 'VectorStoreDao') -> None:
+#     """Mock LLM으로 JSON 출력 테스트"""
     
-    from langchain.schema.runnable import Runnable
-    from langchain.schema import BaseMessage
+#     from langchain.schema.runnable import Runnable
+#     from langchain.schema import BaseMessage
     
-    class MockLLM(Runnable):
-        def invoke(self, input_data, config=None, **kwargs):
-            # 입력이 메시지나 프롬프트인 경우 처리
-            if hasattr(input_data, 'to_string'):
-                prompt_text = input_data.to_string()
-            elif isinstance(input_data, str):
-                prompt_text = input_data
-            else:
-                prompt_text = str(input_data)
+#     class MockLLM(Runnable):
+#         def invoke(self, input_data, config=None, **kwargs):
+#             # 입력이 메시지나 프롬프트인 경우 처리
+#             if hasattr(input_data, 'to_string'):
+#                 prompt_text = input_data.to_string()
+#             elif isinstance(input_data, str):
+#                 prompt_text = input_data
+#             else:
+#                 prompt_text = str(input_data)
             
-            # 프롬프트에서 실제 분석 대상 텍스트 추출
-            import re
-            # "분석 대상 텍스트 ===" 다음에 오는 텍스트를 찾음
-            text_match = re.search(r'=== 분석 대상 텍스트 ===\s*"([^"]+)"', prompt_text)
-            if text_match:
-                actual_input = text_match.group(1)
-            else:
-                actual_input = "알 수 없는 텍스트"
+#             # 프롬프트에서 실제 분석 대상 텍스트 추출
+#             import re
+#             # "분석 대상 텍스트 ===" 다음에 오는 텍스트를 찾음
+#             text_match = re.search(r'=== 분석 대상 텍스트 ===\s*"([^"]+)"', prompt_text)
+#             if text_match:
+#                 actual_input = text_match.group(1)
+#             else:
+#                 actual_input = "알 수 없는 텍스트"
             
-            # 추출된 실제 입력에 따라 응답 생성 (복합 분류 포함)
-            if "여성" in actual_input and "시발" in actual_input:
-                return f"""{{"input_text": "{actual_input}", "is_hate_speech": true, "categories": ["성별", "욕설"], "evidence_strength": 0.95, "reasoning": "여성에 대한 비하 표현과 직접적 욕설이 동시에 포함된 복합 혐오표현", "similar_cases_used": ["사례1", "사례2", "사례3"], "target_group": "여성", "hate_type": "비하+욕설"}}"""
-            elif "여성" in actual_input:
-                return f"""{{"input_text": "{actual_input}", "is_hate_speech": true, "categories": ["성별"], "evidence_strength": 0.85, "reasoning": "검색된 유사 사례들이 모두 성별 기반 혐오표현으로 분류되어 있으며, 여성에 대한 비하적 표현임이 명확함", "similar_cases_used": ["사례1", "사례2", "사례3"], "target_group": "여성", "hate_type": "비하"}}"""
-            elif "욕설" in actual_input:
-                return f"""{{"input_text": "{actual_input}", "is_hate_speech": true, "categories": ["욕설"], "evidence_strength": 0.75, "reasoning": "직접적인 욕설이 포함된 표현으로 혐오표현에 해당함", "similar_cases_used": ["사례1", "사례3"], "target_group": null, "hate_type": "욕설"}}"""
-            elif "꼰대" in actual_input and "일베" in actual_input:
-                return f"""{{"input_text": "{actual_input}", "is_hate_speech": true, "categories": ["연령", "정체성"], "evidence_strength": 0.88, "reasoning": "연령 기반 비하('꼰대')와 특정 집단에 대한 정체성 혐오가 복합적으로 나타남", "similar_cases_used": ["사례1", "사례2"], "target_group": "중년층, 특정 온라인 집단", "hate_type": "비하+정체성혐오"}}"""
-            elif "깨끗한" in actual_input or "일반" in actual_input:
-                return f"""{{"input_text": "{actual_input}", "is_hate_speech": false, "categories": ["혐오없음"], "evidence_strength": 0.9, "reasoning": "검색된 사례 중 혐오없음으로 분류된 사례가 있고, 특정 집단에 대한 차별적 표현이 없음", "similar_cases_used": ["사례1"], "target_group": null, "hate_type": null}}"""
-            elif "나이" in actual_input or "차별" in actual_input:
-                return f"""{{"input_text": "{actual_input}", "is_hate_speech": true, "categories": ["연령"], "evidence_strength": 0.7, "reasoning": "연령 기반 차별 표현으로 판단됨", "similar_cases_used": ["사례1", "사례2"], "target_group": "특정 연령대", "hate_type": "차별"}}"""
-            else:
-                return f"""{{"input_text": "{actual_input}", "is_hate_speech": false, "categories": ["혐오없음"], "evidence_strength": 0.7, "reasoning": "특정 집단에 대한 차별적 표현이 발견되지 않음", "similar_cases_used": [], "target_group": null, "hate_type": null}}"""
+#             # 추출된 실제 입력에 따라 응답 생성 (복합 분류 포함)
+#             if "여성" in actual_input and "시발" in actual_input:
+#                 return f"""{{"input_text": "{actual_input}", "is_hate_speech": true, "categories": ["성별", "욕설"], "evidence_strength": 0.95, "reasoning": "여성에 대한 비하 표현과 직접적 욕설이 동시에 포함된 복합 혐오표현", "similar_cases_used": ["사례1", "사례2", "사례3"], "target_group": "여성", "hate_type": "비하+욕설"}}"""
+#             elif "여성" in actual_input:
+#                 return f"""{{"input_text": "{actual_input}", "is_hate_speech": true, "categories": ["성별"], "evidence_strength": 0.85, "reasoning": "검색된 유사 사례들이 모두 성별 기반 혐오표현으로 분류되어 있으며, 여성에 대한 비하적 표현임이 명확함", "similar_cases_used": ["사례1", "사례2", "사례3"], "target_group": "여성", "hate_type": "비하"}}"""
+#             elif "욕설" in actual_input:
+#                 return f"""{{"input_text": "{actual_input}", "is_hate_speech": true, "categories": ["욕설"], "evidence_strength": 0.75, "reasoning": "직접적인 욕설이 포함된 표현으로 혐오표현에 해당함", "similar_cases_used": ["사례1", "사례3"], "target_group": null, "hate_type": "욕설"}}"""
+#             elif "꼰대" in actual_input and "일베" in actual_input:
+#                 return f"""{{"input_text": "{actual_input}", "is_hate_speech": true, "categories": ["연령", "정체성"], "evidence_strength": 0.88, "reasoning": "연령 기반 비하('꼰대')와 특정 집단에 대한 정체성 혐오가 복합적으로 나타남", "similar_cases_used": ["사례1", "사례2"], "target_group": "중년층, 특정 온라인 집단", "hate_type": "비하+정체성혐오"}}"""
+#             elif "깨끗한" in actual_input or "일반" in actual_input:
+#                 return f"""{{"input_text": "{actual_input}", "is_hate_speech": false, "categories": ["혐오없음"], "evidence_strength": 0.9, "reasoning": "검색된 사례 중 혐오없음으로 분류된 사례가 있고, 특정 집단에 대한 차별적 표현이 없음", "similar_cases_used": ["사례1"], "target_group": null, "hate_type": null}}"""
+#             elif "나이" in actual_input or "차별" in actual_input:
+#                 return f"""{{"input_text": "{actual_input}", "is_hate_speech": true, "categories": ["연령"], "evidence_strength": 0.7, "reasoning": "연령 기반 차별 표현으로 판단됨", "similar_cases_used": ["사례1", "사례2"], "target_group": "특정 연령대", "hate_type": "차별"}}"""
+#             else:
+#                 return f"""{{"input_text": "{actual_input}", "is_hate_speech": false, "categories": ["혐오없음"], "evidence_strength": 0.7, "reasoning": "특정 집단에 대한 차별적 표현이 발견되지 않음", "similar_cases_used": [], "target_group": null, "hate_type": null}}"""
         
-        def batch(self, inputs, config=None, **kwargs):
-            return [self.invoke(input_item, config, **kwargs) for input_item in inputs]
+#         def batch(self, inputs, config=None, **kwargs):
+#             return [self.invoke(input_item, config, **kwargs) for input_item in inputs]
     
-    print("=== Mock LLM JSON 출력 테스트 ===")
+#     print("=== Mock LLM JSON 출력 테스트 ===")
     
-    mock_llm = MockLLM()
-    rag_chain = HateSpeechRAGChain(dao, llm=mock_llm)
+#     mock_llm = MockLLM()
+#     rag_chain = HateSpeechRAGChain(dao, llm=mock_llm)
     
-    test_cases = [
-        "여성을 비하하는 말",
-        "욕설이 포함된 문장", 
-        "깨끗한 일반 문장",
-        "김치녀들 시발 다 똑같아",  # 복합: 성별 + 욕설
-        "꼰대 일베충들"  # 복합: 연령 + 정체성
-    ]
+#     test_cases = [
+#         "여성을 비하하는 말",
+#         "욕설이 포함된 문장", 
+#         "깨끗한 일반 문장",
+#         "김치녀들 시발 다 똑같아",  # 복합: 성별 + 욕설
+#         "꼰대 일베충들"  # 복합: 연령 + 정체성
+#     ]
     
-    for test_text in test_cases:
-        print(f"\n{'='*40}")
-        print(f"테스트: '{test_text}'")
-        print(f"{'='*40}")
+#     for test_text in test_cases:
+#         print(f"\n{'='*40}")
+#         print(f"테스트: '{test_text}'")
+#         print(f"{'='*40}")
         
-        try:
-            result = rag_chain.classify(test_text)
-            print(f"분류 결과 타입: {type(result)}")
-            print(f"혐오표현 여부: {result.is_hate_speech}")
-            print(f"카테고리: {result.categories}")
-            print(f"증거 강도: {result.evidence_strength}")
-            print(f"근거: {result.reasoning}")
-            print(f"대상 집단: {result.target_group}")
-            print(f"혐오 유형: {result.hate_type}")
+#         try:
+#             result = rag_chain.classify(test_text)
+#             print(f"분류 결과 타입: {type(result)}")
+#             print(f"혐오표현 여부: {result.is_hate_speech}")
+#             print(f"카테고리: {result.categories}")
+#             print(f"증거 강도: {result.evidence_strength}")
+#             print(f"근거: {result.reasoning}")
+#             print(f"대상 집단: {result.target_group}")
+#             print(f"혐오 유형: {result.hate_type}")
             
-            print(f"\nJSON 출력:")
-            print(result.model_dump_json(indent=2))
+#             print(f"\nJSON 출력:")
+#             print(result.model_dump_json(indent=2))
             
-        except Exception as e:
-            print(f"오류: {e}")
-            import traceback
-            traceback.print_exc()
+#         except Exception as e:
+#             print(f"오류: {e}")
+#             import traceback
+#             traceback.print_exc()
 
-# 개별 컴포넌트 테스트
-def test_individual_components(dao: 'VectorStoreDao') -> None:
-    """개별 Runnable 컴포넌트들 테스트"""
+# # 개별 컴포넌트 테스트
+# def test_individual_components(dao: 'VectorStoreDao') -> None:
+#     """개별 Runnable 컴포넌트들 테스트"""
     
-    print("=== 개별 컴포넌트 테스트 ===")
+#     print("=== 개별 컴포넌트 테스트 ===")
     
-    # 1. 리트리버 테스트
-    retriever = VectorStoreRetriever(dao, k=2)
-    query = "여성을 비하하는 말"
+#     # 1. 리트리버 테스트
+#     retriever = VectorStoreRetriever(dao, k=2)
+#     query = "여성을 비하하는 말"
     
-    print(f"\n1. 리트리버 테스트 - 쿼리: '{query}'")
-    search_results = retriever.invoke(query)
-    for i, (doc, score) in enumerate(search_results):
-        print(f"  결과 {i+1}: {doc.page_content[:50]}... (점수: {score:.3f})")
+#     print(f"\n1. 리트리버 테스트 - 쿼리: '{query}'")
+#     search_results = retriever.invoke(query)
+#     for i, (doc, score) in enumerate(search_results):
+#         print(f"  결과 {i+1}: {doc.page_content[:50]}... (점수: {score:.3f})")
     
-    # 2. 포맷터 테스트
-    formatter = SimilarCasesFormatter()
-    print(f"\n2. 포맷터 테스트:")
-    formatted = formatter.invoke(search_results)
-    print(formatted)
+#     # 2. 포맷터 테스트
+#     formatter = SimilarCasesFormatter()
+#     print(f"\n2. 포맷터 테스트:")
+#     formatted = formatter.invoke(search_results)
+#     print(formatted)
     
-    # 3. 체인 조합 테스트
-    print(f"\n3. 체인 조합 테스트:")
-    combined_chain = retriever | formatter
-    result = combined_chain.invoke(query)
-    print(result)
+#     # 3. 체인 조합 테스트
+#     print(f"\n3. 체인 조합 테스트:")
+#     combined_chain = retriever | formatter
+#     result = combined_chain.invoke(query)
+#     print(result)
 
-# 배치 처리 테스트
-def test_batch_processing(dao: 'VectorStoreDao') -> None:
+# # 배치 처리 테스트
+# def test_batch_processing(dao: 'VectorStoreDao') -> None:
     """배치 처리 테스트"""
     
     print("=== 배치 처리 테스트 ===")

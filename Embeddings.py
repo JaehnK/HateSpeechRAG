@@ -85,7 +85,6 @@ class UpstageEmbeddingModel(BaseEmbedding):
             upstage_api_key=self.api_key
         )
 
-
 class EmbeddingModelFactory:
     """
     임베딩 모델 팩토리 클래스
