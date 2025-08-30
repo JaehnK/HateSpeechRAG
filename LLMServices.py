@@ -1,5 +1,6 @@
 import json
 import asyncio
+import time
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any, Union
 from dataclasses import dataclass, asdict
@@ -11,6 +12,13 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from langchain_google_genai import ChatGoogleGenerativeAI
+
+
+from openai import RateLimitError as OpenAIRateLimitError, BadRequestError as OpenAIBadRequestError
+from anthropic import RateLimitError as AnthropicRateLimitError, BadRequestError as AnthropicBadRequestError
+
+
+RETRY_DELAY = 30
 
 class LLMProvider(Enum):
     """
@@ -59,9 +67,31 @@ class OpenAILLMService(BaseLLMService):
         return ChatOpenAI(
             model=self.model_name,
             openai_api_key=self.api_key,
-            # temperature=0,
+            temperature=0,
             **self.kwargs
         )
+        
+    def invoke(self, messages:str, max_retries:int=3, **kwargs):
+        for attempt in range(max_retries, + 1):
+            try:
+                return  self.llm.invoke(messages, **kwargs)
+            
+            except OpenAIRateLimitError as e:
+                if attempt < max_retries:
+                    wait_time = RETRY_DELAY * (2 ** attempt)  # 지수 백오프
+                    print(f"Rate limit 에러 발생. {wait_time}초 후 재시도... (시도 {attempt + 1}/{max_retries + 1})")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    print("Rate limit 에러: 최대 재시도 횟수를 초과했습니다.")
+                    raise
+            
+            except OpenAIBadRequestError as e:
+                print(f"잘못된 요청 에러: {str(e)}\nInput: {messages}")
+                raise
+            
+            except Exception as e:
+                raise
         
 class AnthropicLLMService(BaseLLMService):
     """Anthropic Claude LLM 서비스"""
@@ -80,6 +110,26 @@ class AnthropicLLMService(BaseLLMService):
             temperature=0.0,
             **self.kwargs
         )
+        
+    def invoke(self, messages: str, max_retries: int = 3, **kwargs):
+        """Anthropic LLM 호출 (재시도 및 오류 처리 포함)"""
+        for attempt in range(max_retries + 1):
+            try:
+                return self.llm.invoke(messages, **kwargs)
+            except AnthropicRateLimitError as e:
+                if attempt < max_retries:
+                    wait_time = RETRY_DELAY * (2 ** attempt)  # 지수 백오프
+                    print(f"Rate limit 에러 발생. {wait_time}초 후 재시도... (시도 {attempt + 1}/{max_retries + 1})")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    print("Rate limit 에러: 최대 재시도 횟수를 초과했습니다.")
+                    raise
+            except AnthropicBadRequestError as e:
+                print(f"잘못된 요청 에러: {str(e)}\nInput: {messages}")
+                raise
+            except Exception as e:
+                raise
         
 class GoogleLLMService(BaseLLMService):
     """Google Gemini LLM 서비스"""
@@ -118,7 +168,7 @@ class LLMServiceFactory:
             provider = LLMProvider(provider.lower())
         
         if provider == LLMProvider.OPENAI:
-            return OpenAILLMService(model_name or "gpt-5-mini", **kwargs)
+            return OpenAILLMService(model_name or "gpt-5", **kwargs)
         elif provider == LLMProvider.ANTHROPIC:
             return AnthropicLLMService(model_name or "claude-sonnet-4-20250514", **kwargs)  #claude-sonnet-4-20250514, claude-3-haiku-20240307"
         elif provider == LLMProvider.GOOGLE:
