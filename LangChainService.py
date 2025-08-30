@@ -5,6 +5,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema.runnable import RunnableLambda
 from langchain.output_parsers import PydanticOutputParser
 from langchain_teddynote import logging
+from openai import RateLimitError
 from pydantic import BaseModel, Field
 from operator import itemgetter
 import json
@@ -115,9 +116,9 @@ class HateSpeechClassification(BaseModel):
 class HateSpeechRAGChain:
     """혐오표현 분류를 위한 RAG 체인"""
     
-    def __init__(self, dao: 'VectorStoreDao', llm=None):
+    def __init__(self, dao: 'VectorStoreDao', llm='openai'):
         self.dao = dao
-        self.llm = llm
+        self.llm = LLMServiceFactory.create_llm_service(llm).model
         
         # Runnable 컴포넌트들 초기화
         self.retriever = VectorStoreRetriever(dao)  # 파라미터 제거
@@ -188,28 +189,27 @@ class HateSpeechRAGChain:
         """혐오표현 분류 수행 (구조화된 결과 반환)"""
         if self.llm is None:
             raise ValueError("LLM이 설정되지 않았습니다. 분류를 위해서는 LLM이 필요합니다.")
-
+        
         print("\n--- Detailed Profiling ---")
-
         # 1. (Isolate) Query Embedding 시간 측정
         start_time = time.time()
         # DAO를 통해 임베딩 모델에 접근
         _ = self.dao.embedding_model.embedding_model.embed_query(text)
         embedding_time = time.time() - start_time
         print(f"1. (Isolated) Query Embedding: {embedding_time:.4f} 초")
-
+        
         # 2. Retrieval 시간 측정 (내부적으로 임베딩 포함)
         start_time = time.time()
         retrieved_docs = self.retriever.invoke(text)
         retrieval_time = time.time() - start_time
         print(f"2. Full Retrieval (Embedding + Search): {retrieval_time:.4f} 초")
-
+        
         # 3. Formatting 시간 측정
         start_time = time.time()
         formatted_cases = self.formatter.invoke(retrieved_docs)
         formatting_time = time.time() - start_time
         print(f"3. Formatting: {formatting_time:.4f} 초")
-
+        
         # 4. Prompt 생성 시간 측정
         start_time = time.time()
         prompt_input = {
@@ -220,24 +220,39 @@ class HateSpeechRAGChain:
         prompt = self.prompt_template.invoke(prompt_input)
         prompt_time = time.time() - start_time
         print(f"4. Prompt Generation: {prompt_time:.4f} 초")
-
-        # 5. LLM 호출 시간 측정
+        
+        # 5. LLM 호출 시간 측정 (Rate Limit 에러 처리)
         start_time = time.time()
-        llm_output = self.llm.invoke(prompt)
+        max_retries = 3
+        retry_delay = 20  # 초
+        
+        for attempt in range(max_retries):
+            try:
+                llm_output = self.llm.invoke(prompt)
+                break
+            except RateLimitError as e:
+                print(f"Rate limit exceeded (attempt {attempt + 1}/{max_retries})")
+                if attempt < max_retries - 1:
+                    print(f"Waiting {retry_delay} seconds before retry...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # 지수적 백오프
+                else:
+                    raise e  # 최대 재시도 횟수 초과시 에러 다시 발생
+        
         llm_time = time.time() - start_time
         print(f"5. LLM Call: {llm_time:.4f} 초")
-
+        
         # 6. Output Parsing 시간 측정
         start_time = time.time()
         parsed_output = self.output_parser.invoke(llm_output)
         parsing_time = time.time() - start_time
         print(f"6. Output Parsing: {parsing_time:.4f} 초")
-
+        
         # 참고: 총 시간은 임베딩이 두 번 측정되므로 실제보다 약간 부풀려져 표시됩니다.
         total_time = embedding_time + retrieval_time + formatting_time + prompt_time + llm_time + parsing_time
         print(f"Total Execution Time (approx.): {total_time:.4f} 초")
         print("-------------------------")
-
+        
         parsed_output.prompt = prompt.to_string()
         return parsed_output
     
@@ -394,20 +409,6 @@ class HateSpeechRAGChain:
 #     result = combined_chain.invoke(query)
 #     print(result)
 
-# # 배치 처리 테스트
-# def test_batch_processing(dao: 'VectorStoreDao') -> None:
-    """배치 처리 테스트"""
-    
-    print("=== 배치 처리 테스트 ===")
-    
-    queries = ["여성 비하", "나이 차별", "일반 문장"]
-    rag_chain = HateSpeechRAGChain(dao)
-    
-    # 배치로 프롬프트 생성
-    for query in queries:
-        print(f"\n쿼리: {query}")
-        prompt = rag_chain.get_prompt(query)
-        print(f"프롬프트 길이: {len(prompt)} 문자")
 
 if __name__ == "__main__":
     load_dotenv()

@@ -53,6 +53,7 @@ class OpenAILLMService(BaseLLMService):
             raise ValueError("OpenAI API 키가 필요합니다.")
         
         self._llm = self._initialize_llm()
+        print(f"OpenAI LLM 서비스가 '{self.model_name}' 모델로 초기화되었습니다.")
     
     def _initialize_llm(self) -> ChatOpenAI:
         return ChatOpenAI(
@@ -111,13 +112,15 @@ class LLMServiceFactory:
         """LLM 서비스 생성"""
         load_dotenv()
         
+        print(f"LLM Service Provider: {provider}")
+        
         if isinstance(provider, str):
             provider = LLMProvider(provider.lower())
         
         if provider == LLMProvider.OPENAI:
             return OpenAILLMService(model_name or "gpt-5-mini", **kwargs)
         elif provider == LLMProvider.ANTHROPIC:
-            return AnthropicLLMService(model_name, **kwargs)
+            return AnthropicLLMService(model_name or "claude-sonnet-4-20250514", **kwargs)  #claude-sonnet-4-20250514, claude-3-haiku-20240307"
         elif provider == LLMProvider.GOOGLE:
             return GoogleLLMService(model_name, **kwargs)
         else:

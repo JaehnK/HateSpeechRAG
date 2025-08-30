@@ -562,6 +562,10 @@ class YouTubeDBSetup:
                 """
                 cursor.execute(query, (batch_size, offset))
                 rows = cursor.fetchall()
+                
+                if not rows:
+                    break
+                
                 for row in rows:
                     comment = {
                         'comment_id': row[0],
@@ -589,7 +593,9 @@ class YouTubeDBSetup:
                         })
                     
                     yield comment
-            
+                
+                offset += batch_size
+                
             except Exception as e:
                 print(f"배치 {offset // batch_size + 1} 처리 실패: {e}")
                 break
