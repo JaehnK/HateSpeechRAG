@@ -1,3 +1,4 @@
+import os
 from typing import List, Dict, Any, Tuple, Optional
 from langchain.schema.runnable import Runnable, RunnablePassthrough, RunnableParallel
 from langchain.schema import Document
@@ -8,6 +9,8 @@ from langchain_teddynote import logging
 from openai import RateLimitError
 from pydantic import BaseModel, Field
 from operator import itemgetter
+from langfuse import Langfuse
+
 import json
 import time
 
@@ -117,8 +120,17 @@ class HateSpeechRAGChain:
     """혐오표현 분류를 위한 RAG 체인"""
     
     def __init__(self, dao: 'VectorStoreDao', llm='openai'):
+        langfuse = Langfuse(
+            secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
+            public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
+            host="https://cloud.langfuse.com"
+            )
+        
         self.dao = dao
         self.llm = LLMServiceFactory.create_llm_service(llm)
+        print(self.llm._llm.model_name)
+        
+        
         
         # Runnable 컴포넌트들 초기화
         self.retriever = VectorStoreRetriever(dao)  # 파라미터 제거
@@ -190,7 +202,7 @@ class HateSpeechRAGChain:
         if self.llm is None:
             raise ValueError("LLM이 설정되지 않았습니다. 분류를 위해서는 LLM이 필요합니다.")
         
-        print("\n--- Detailed Profiling ---")
+        # print("\n--- Detailed Profiling ---")
         # 1. (Isolate) Query Embedding 시간 측정
         start_time = time.time()
         # DAO를 통해 임베딩 모델에 접근
@@ -224,7 +236,9 @@ class HateSpeechRAGChain:
         # 5. LLM 호출 시간 측정
         start_time = time.time()
         try:
+            # print(f"prompt: {prompt}")
             llm_output = self.llm.invoke(prompt)
+            # print(f"llm_output: {llm_output}")
             llm_time = time.time() - start_time
             print(f"5. LLM Call: {llm_time:.4f} 초")
         except Exception as e:
@@ -257,7 +271,7 @@ class HateSpeechRAGChain:
 
 if __name__ == "__main__":
     load_dotenv()
-    logging.langsmith("HateSpeechTest")
+    # logging.langsmith("HateSpeechTest")
     dao = VectorStoreDao(
         persist_directory="./hate_speech_vectorstore",
         embedding_model = EmbeddingModelFactory.create_embedding_model('upstage'),

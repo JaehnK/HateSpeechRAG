@@ -13,6 +13,7 @@ from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from langchain_google_genai import ChatGoogleGenerativeAI
 
+from langfuse import observe, get_client
 
 from openai import RateLimitError as OpenAIRateLimitError, BadRequestError as OpenAIBadRequestError
 from anthropic import RateLimitError as AnthropicRateLimitError, BadRequestError as AnthropicBadRequestError
@@ -61,20 +62,23 @@ class OpenAILLMService(BaseLLMService):
             raise ValueError("OpenAI API 키가 필요합니다.")
         
         self._llm = self._initialize_llm()
-        print(f"OpenAI LLM 서비스가 '{self.model_name}' 모델로 초기화되었습니다.")
+        print(f"OpenAI LLM 서비스가 '{self._llm.model_name}' 모델로 초기화되었습니다.")
     
     def _initialize_llm(self) -> ChatOpenAI:
         return ChatOpenAI(
             model=self.model_name,
             openai_api_key=self.api_key,
-            temperature=0,
+            # temperature=0,
             **self.kwargs
         )
-        
+    
+    @observe(name="openai_llm_invoke", as_type="generation")    
     def invoke(self, messages:str, max_retries:int=3, **kwargs):
-        for attempt in range(max_retries, + 1):
+        for attempt in range(max_retries + 1):
             try:
-                return  self.llm.invoke(messages, **kwargs)
+                result = self._llm.invoke(messages, **kwargs)
+                print(result)
+                return result
             
             except OpenAIRateLimitError as e:
                 if attempt < max_retries:
@@ -110,7 +114,8 @@ class AnthropicLLMService(BaseLLMService):
             temperature=0.0,
             **self.kwargs
         )
-        
+    
+    @observe(name="openai_llm_invoke", as_type="generation")    
     def invoke(self, messages: str, max_retries: int = 3, **kwargs):
         """Anthropic LLM 호출 (재시도 및 오류 처리 포함)"""
         for attempt in range(max_retries + 1):

@@ -2,7 +2,8 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import logging
-from langchain_teddynote import logging as langsmith_logging
+from langfuse import Langfuse
+
 from sklearn.metrics import f1_score, hamming_loss, accuracy_score
 
 from pprint import pprint
@@ -28,6 +29,8 @@ class HateSpeechAnalyzer:
         dao.initialize_retriever(retriever_type="basic", k=3)
         
         self.rag_model = HateSpeechRAGChain(dao = dao, llm = llm)
+        
+        
         
     def setup_logging(self):
         """로깅 설정"""
@@ -62,9 +65,11 @@ class HateSpeechAnalyzer:
     def test_unsmile_dataset(self, test_df:pd.DataFrame):
         pred_vecs, actual_vecs = [], []
 
-        for idx, txt in enumerate(test_df['문장']):
+        for idx in test_df.index:
+            txt = test_df.loc[idx, '문장']
             result = self.analyze_comment(txt)
-            
+            if result is None:
+                continue
             predicted_vec = [0,0,0,0,0,0]
             if "성별" in result.categories:
                 predicted_vec[0] = 1
@@ -150,10 +155,11 @@ def test_model(analyzer: HateSpeechAnalyzer):
 
 if __name__ == "__main__":
     load_dotenv()
-    langsmith_logging.langsmith("HateSpeechTest")
-    analyzer = HateSpeechAnalyzer(YouTubeDBSetup(), llm='anthropic')
+    # langsmith_logging.langsmith("HateSpeechTest")
+
+    analyzer = HateSpeechAnalyzer(YouTubeDBSetup())
     # test_model(analyzer)
-    # analyzer.analyze_comment("생물학 화학 의학 약학 공부하는 년들아 제발 한남 골라 죽이는 생화학 무기나 바이러스 같은 것 좀 만들어 줘라 이기야광광")
+    analyzer.analyze_comment("안녕하세요")
 
 
     # pprint(f"입력 텍스트: {result.input_text}")
