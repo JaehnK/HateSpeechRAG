@@ -6,7 +6,7 @@ from typing import List, Dict, Any
 import time
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_teddynote import logging
+# from langchain_teddynote import logging
 from dotenv import load_dotenv
 
 from YouTubeDao import YouTubeDBSetup
@@ -18,7 +18,7 @@ from LangChainService import HateSpeechRAGChain
 class YOuTubeContentClassifier:
     def __init__(self):
         load_dotenv()
-        logging.langsmith("HateSpeechTest")
+        # logging.langsmith("HateSpeechTest")
         
         self.youtube_dao = YouTubeDBSetup()
         self.connection = self.youtube_dao.get_connection()

@@ -535,10 +535,10 @@ class YouTubeDBSetup:
             if connection:
                 connection.close()
 
-    def get_comments_generator(self, batch_size=1000, include_analysis=True):
+    def get_comments_generator(self, batch_size:int=1000, include_analysis:bool=True, _offset:int=0):
         """Comments table의 요소를 제너레이터로 리턴"""
         
-        offset = 0
+        offset = _offset
         
         while True:
             connection = self.get_connection()

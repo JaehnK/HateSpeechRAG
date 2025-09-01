@@ -13,7 +13,10 @@ from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from langchain_google_genai import ChatGoogleGenerativeAI
 
+from langfuse import Langfuse
 from langfuse import observe, get_client
+from langfuse.langchain import CallbackHandler
+
 
 from openai import RateLimitError as OpenAIRateLimitError, BadRequestError as OpenAIBadRequestError
 from anthropic import RateLimitError as AnthropicRateLimitError, BadRequestError as AnthropicBadRequestError
@@ -37,6 +40,12 @@ class BaseLLMService(ABC):
         self.model_name = model_name
         self.llm = None
         self.kwargs = kwargs
+        self.langfuse = Langfuse(
+            secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
+            public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
+            host="http://localhost:3000"
+        )
+        self.langfuse_handler = CallbackHandler()
     
     @abstractmethod
     def _initialize_llm(self) -> Any:
@@ -72,31 +81,37 @@ class OpenAILLMService(BaseLLMService):
             **self.kwargs
         )
     
-    @observe(name="openai_llm_invoke", as_type="generation")    
-    def invoke(self, messages:str, max_retries:int=3, **kwargs):
+    @observe(name="openai_llm_invoke")
+    def invoke(self, messages: str, max_retries: int = 3, **kwargs):
+        """OpenAI LLM 호출 (재시도 및 오류 처리 포함)"""
         for attempt in range(max_retries + 1):
             try:
+                config = {"callbacks": [self.langfuse_handler]}
+                if 'config' in kwargs:
+                    kwargs['config']['callbacks'] = [self.langfuse_handler]
+                else:
+                    kwargs['config'] = config
                 result = self._llm.invoke(messages, **kwargs)
                 print(result)
                 return result
-            
+                
             except OpenAIRateLimitError as e:
                 if attempt < max_retries:
-                    wait_time = RETRY_DELAY * (2 ** attempt)  # 지수 백오프
+                    wait_time = RETRY_DELAY * (2 ** attempt)
                     print(f"Rate limit 에러 발생. {wait_time}초 후 재시도... (시도 {attempt + 1}/{max_retries + 1})")
                     time.sleep(wait_time)
                     continue
                 else:
                     print("Rate limit 에러: 최대 재시도 횟수를 초과했습니다.")
                     raise
-            
+                    
             except OpenAIBadRequestError as e:
                 print(f"잘못된 요청 에러: {str(e)}\nInput: {messages}")
                 raise
-            
+                
             except Exception as e:
                 raise
-        
+
 class AnthropicLLMService(BaseLLMService):
     """Anthropic Claude LLM 서비스"""
     
@@ -115,12 +130,14 @@ class AnthropicLLMService(BaseLLMService):
             **self.kwargs
         )
     
-    @observe(name="openai_llm_invoke", as_type="generation")    
+    @observe(name="anthropic_llm_invoke", as_type="generation")
     def invoke(self, messages: str, max_retries: int = 3, **kwargs):
         """Anthropic LLM 호출 (재시도 및 오류 처리 포함)"""
         for attempt in range(max_retries + 1):
             try:
-                return self.llm.invoke(messages, **kwargs)
+                result = self._llm.invoke(messages, **kwargs)
+                return result
+                
             except AnthropicRateLimitError as e:
                 if attempt < max_retries:
                     wait_time = RETRY_DELAY * (2 ** attempt)  # 지수 백오프
@@ -130,12 +147,14 @@ class AnthropicLLMService(BaseLLMService):
                 else:
                     print("Rate limit 에러: 최대 재시도 횟수를 초과했습니다.")
                     raise
+                    
             except AnthropicBadRequestError as e:
                 print(f"잘못된 요청 에러: {str(e)}\nInput: {messages}")
                 raise
+                
             except Exception as e:
                 raise
-        
+
 class GoogleLLMService(BaseLLMService):
     """Google Gemini LLM 서비스"""
     
@@ -153,6 +172,29 @@ class GoogleLLMService(BaseLLMService):
             temperature=0.0,
             **self.kwargs
         )
+    
+    @observe(name="google_llm_invoke", as_type="generation")
+    def invoke(self, messages: str, max_retries: int = 3, **kwargs):
+        """Google LLM 호출 (재시도 및 오류 처리 포함)"""
+        # get_client()를 사용하여 현재 observation 업데이트
+        client = get_client()
+        
+        # 현재 span 업데이트
+        with client.start_as_current_generation(name="llm_call", model=self.model_name) as generation:
+            for attempt in range(max_retries + 1):
+                try:
+                    result = self.llm.invoke(messages, **kwargs)
+                    generation.update(output=result)
+                    return result
+                except Exception as e:
+                    if attempt < max_retries:
+                        wait_time = RETRY_DELAY * (2 ** attempt)
+                        print(f"에러 발생. {wait_time}초 후 재시도... (시도 {attempt + 1}/{max_retries + 1})")
+                        time.sleep(wait_time)
+                        continue
+                    else:
+                        print(f"에러: 최대 재시도 횟수를 초과했습니다. {str(e)}")
+                        raise
 
 
 class LLMServiceFactory:
@@ -173,7 +215,7 @@ class LLMServiceFactory:
             provider = LLMProvider(provider.lower())
         
         if provider == LLMProvider.OPENAI:
-            return OpenAILLMService(model_name or "gpt-5", **kwargs)
+            return OpenAILLMService(model_name or "gpt-5-mini", **kwargs) #gpt-5, gpt-5-mini
         elif provider == LLMProvider.ANTHROPIC:
             return AnthropicLLMService(model_name or "claude-sonnet-4-20250514", **kwargs)  #claude-sonnet-4-20250514, claude-3-haiku-20240307"
         elif provider == LLMProvider.GOOGLE:

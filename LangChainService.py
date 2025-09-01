@@ -5,7 +5,7 @@ from langchain.schema import Document
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.runnable import RunnableLambda
 from langchain.output_parsers import PydanticOutputParser
-from langchain_teddynote import logging
+# from langchain_teddynote import logging
 from openai import RateLimitError
 from pydantic import BaseModel, Field
 from operator import itemgetter
@@ -119,18 +119,17 @@ class HateSpeechClassification(BaseModel):
 class HateSpeechRAGChain:
     """혐오표현 분류를 위한 RAG 체인"""
     
-    def __init__(self, dao: 'VectorStoreDao', llm='openai'):
+    def __init__(self, dao: 'VectorStoreDao', llm='openai', model_name=None):
         langfuse = Langfuse(
             secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
             public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
-            host="https://cloud.langfuse.com"
+            # host="https://cloud.langfuse.com"
+            host = "http://localhost:3000"
             )
         
         self.dao = dao
-        self.llm = LLMServiceFactory.create_llm_service(llm)
+        self.llm = LLMServiceFactory.create_llm_service(llm, model_name)
         print(self.llm._llm.model_name)
-        
-        
         
         # Runnable 컴포넌트들 초기화
         self.retriever = VectorStoreRetriever(dao)  # 파라미터 제거

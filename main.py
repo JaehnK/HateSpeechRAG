@@ -16,7 +16,7 @@ from Embeddings import EmbeddingModelFactory
 class HateSpeechAnalyzer:
     """혐오표현 분석 및 DB 업데이트 담당 클래스"""
     
-    def __init__(self, youtube_db: YouTubeDBSetup, llm:str='openai'):
+    def __init__(self, youtube_db: YouTubeDBSetup, llm:str='openai', model:str='gpt-5'):
         self.youtube_db = youtube_db
         self.setup_logging()
         
@@ -29,7 +29,6 @@ class HateSpeechAnalyzer:
         dao.initialize_retriever(retriever_type="basic", k=3)
         
         self.rag_model = HateSpeechRAGChain(dao = dao, llm = llm)
-        
         
         
     def setup_logging(self):
