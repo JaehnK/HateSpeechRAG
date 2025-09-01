@@ -150,8 +150,6 @@ def test_model(analyzer: HateSpeechAnalyzer):
     print(f"  - 상세 결과: {json_filename}")
     print(f"  - 성능 요약: {summary_filename}")
 
-
-
 if __name__ == "__main__":
     load_dotenv()
     # langsmith_logging.langsmith("HateSpeechTest")

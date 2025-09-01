@@ -41,6 +41,19 @@ class BaseEmbedding(ABC):
         """
         return self.embedding_model.embed_query(text)
 
+    @abstractmethod
+    async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
+        """
+        문서를 비동기적으로 임베딩 반환
+        """
+        pass
+    
+    @abstractmethod
+    async def aembed_query(self, text: str) -> List[float]:
+        """
+        쿼리를 비동기적으로 임베딩으로 변환
+        """
+        pass
 
 class OpenAIEmbeddingModel(BaseEmbedding):
     """
@@ -63,6 +76,12 @@ class OpenAIEmbeddingModel(BaseEmbedding):
             openai_api_key=self.api_key
         )
 
+    async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
+        return await self.embedding_model.aembed_documents(texts)
+
+    async def aembed_query(self, text: str) -> List[float]:
+        return await self.embedding_model.aembed_query(text)
+
 class UpstageEmbeddingModel(BaseEmbedding):
     """
     Upstage 임베딩 모델 구현=
@@ -84,6 +103,12 @@ class UpstageEmbeddingModel(BaseEmbedding):
             model=self.model_name,
             upstage_api_key=self.api_key
         )
+    
+    async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
+        return await self.embedding_model.aembed_documents(texts)
+    
+    async def aembed_query(self, text: str) -> List[float]:
+        return await self.embedding_model.aembed_query(text)
 
 class EmbeddingModelFactory:
     """
