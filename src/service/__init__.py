@@ -1,4 +1,11 @@
-from YouTubeAnalysisManager import YouTubeAnalysisManager, BaseYouTubeClassifier
+from .BaseClassifier import BaseYouTubeClassifier
+from .YouTubeAnalysisManager import YouTubeAnalysisManager
+from .YouTubeCommentClassifier import YouTubeCommentClassifier
+from .YouTubeScriptClassifier import YouTubeScriptClassifier
 
-__all__ = ['YouTubeAnalysisManager', 
-            'BaseYouTubeClassifier']
+__all__ = [
+    "BaseYouTubeClassifier",
+    "YouTubeAnalysisManager",
+    "YouTubeCommentClassifier",
+    "YouTubeScriptClassifier",
+]

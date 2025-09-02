@@ -11,20 +11,6 @@ from src.embedding import EmbeddingModelFactory
 from src.llm import HateSpeechRAGChain
 
 
-class BaseYouTubeClassifier:
-    def __init__(self, youtube_dao, rag_chain):
-        self.youtube_dao = youtube_dao
-        self.connection = self.youtube_dao.get_connection()
-        self.cursor = self.connection.cursor()
-        self.rag_chain = rag_chain
-
-    def _classify_sentences(self, sentences: List[str]):  # 오타 수정
-        pass
-
-    def _classify_sentences_async(self, sentences: List[str]):
-        pass
-
-
 class YouTubeAnalysisManager:
     def __init__(self, llm: str = 'openai', model_name: str = None):
         load_dotenv()
@@ -70,7 +56,7 @@ class YouTubeAnalysisManager:
         
         # 통계 출력
         print(f"\n🎉 전체 처리 완료!")
-        print(f"�� 총 처리된 댓글: {results['total_processed']}개")
+        print(f"📊 총 처리된 댓글: {results['total_processed']}개")
         print(f"🚨 혐오발언 댓글: {results['total_hate_speech']}개")
         print(f"📈 혐오발언 비율: {results['hate_speech_ratio']:.2f}%")
         

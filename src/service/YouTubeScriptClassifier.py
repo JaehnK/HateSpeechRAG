@@ -12,10 +12,11 @@ from dotenv import load_dotenv
 from src.dao import YouTubeDBSetup, VectorStoreDao
 from src.embedding import EmbeddingModelFactory
 from src.llm import LLMServiceFactory, HateSpeechRAGChain
-from src.llm.LangChainService import rag_chain # RAGService → HateSpeechRAGChain으로 변경
+# from src.llm.LangChainService import rag_chain # RAGService → HateSpeechRAGChain으로 변경
+from src.service.BaseClassifier import BaseYouTubeClassifier
 
-class YouTubeScriptClassifier:
-    def __init__(self, youtube_dao:'YouTubeDBSetup', rag_chain:'rag_chain'):
+class YouTubeScriptClassifier(BaseYouTubeClassifier):
+    def __init__(self, youtube_dao:'YouTubeDBSetup', rag_chain:'HateSpeechRAGChain'):
         super().__init__(youtube_dao, rag_chain)
         self._init_text_splitter()
 
@@ -210,7 +211,7 @@ class YouTubeScriptClassifier:
 
 if "__main__" == __name__:
     from pprint import pprint
-    classifier = YouTubeContentClassifier()
+    classifier = YouTubeScriptClassifier()
     
     # print(classifier._load_script("k_byR7RQ-PI", "/home/jaehun/lab/YouTubeHateSpeech"))
     results = classifier.classify_video_script("k_byR7RQ-PI", "/home/jaehun/lab/YouTubeHateSpeech")

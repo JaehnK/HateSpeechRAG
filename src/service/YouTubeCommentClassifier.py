@@ -1,4 +1,4 @@
-from src.service.YouTubeAnalysisManager import BaseYouTubeClassifier
+from src.service.BaseClassifier import BaseYouTubeClassifier
 from src.dao import YouTubeDBSetup
 from src.llm import HateSpeechRAGChain
 from typing import List
@@ -16,6 +16,7 @@ class YouTubeCommentClassifier(BaseYouTubeClassifier):
     
     def _load_comments_to_dataframe(self, limit: int = None):
         """DB에서 댓글을 DataFrame으로 로드 (필요시 사용)"""
+        import pandas as pd
         
         query = """
         SELECT comment_id, comment_text, video_id, author
