@@ -4,8 +4,8 @@ from langchain.schema import Document
 from langchain_chroma import Chroma
 from langchain_openai import ChatOpenAI
 
-from Embeddings import BaseEmbedding, EmbeddingModelFactory
-from Retrievers import BaseRetriever, RetrieverFactory
+from ..embedding import BaseEmbedding, EmbeddingModelFactory
+from ..retriever import BaseRetriever, RetrieverFactory
 
 
 class VectorStoreDao:
@@ -15,7 +15,7 @@ class VectorStoreDao:
     
     def __init__(
         self, 
-        persist_directory: str = "./chroma_db",
+        persist_directory: str = "../../data/vectorstores/hate_speech_vectorstore", # 경로 수정
         embedding_model: Optional[BaseEmbedding] = None,
         collection_name: str = "hate_speech_collection"
     ):

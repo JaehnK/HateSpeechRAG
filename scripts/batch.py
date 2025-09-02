@@ -9,11 +9,15 @@ import pandas as pd
 from openai import OpenAI
 import time # time 모듈 추가
 
-from VectorStoreDao import VectorStoreDao
-from Embeddings import EmbeddingModelFactory
-from LLMServices import LLMServiceFactory
-from LangChainService import HateSpeechRAGChain, HateSpeechClassification
-from HateSpeechDao import HateSpeechDBSetup
+import sys
+import os
+
+# src 디렉토리를 Python 경로에 추가
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+
+from dao import VectorStoreDao, HateSpeechDBSetup
+from embedding import EmbeddingModelFactory
+from llm import LLMServiceFactory, HateSpeechClassification, RAGService as HateSpeechRAGChain # RAGService로 변경, alias 사용
 
 
 def load_dataset(file_path: str) -> List[str]:
@@ -24,6 +28,9 @@ def load_dataset(file_path: str) -> List[str]:
     Returns:
         텍스트 리스트
     """
+    # 기본 경로를 'data/raw/korean_unsmile_dataset'으로 설정할 수 있습니다.
+    # 만약 파일 경로가 상대경로라면, 현재 스크립트 위치 기준으로 조정해야 합니다.
+    # 예: file_path = os.path.join(os.path.dirname(__file__), "..", "data", "raw", "korean_unsmile_dataset", "unsmile_dataset.tsv")
     df = pd.read_csv(file_path, sep='\t')
     return df['문장'].tolist()
 
@@ -38,7 +45,7 @@ def generate_prompts_for_batch(texts: List[str]) -> Tuple[List[Dict], Dict[str, 
     """
     # VectorStoreDao 초기화
     dao = VectorStoreDao(
-        persist_directory="./hate_speech_vectorstore",
+        persist_directory="./data/vectorstores/hate_speech_vectorstore", # 경로 수정
         embedding_model = EmbeddingModelFactory.create_embedding_model('upstage'), 
         collection_name="hate_speech_collection"
     )
@@ -77,6 +84,8 @@ def save_batch_requests_to_jsonl(batch_requests: List[Dict], output_file: str) -
         batch_requests: OpenAI Batch API 요청 딕셔너리 리스트
         output_file: JSONL 파일 경로
     """
+    # output_file 경로도 현재 스크립트 위치 기준으로 조정될 수 있습니다.
+    # 예: output_file = os.path.join(os.path.dirname(__file__), "..", "data", "raw", output_file)
     with open(output_file, 'w', encoding='utf-8') as f:
         for request in batch_requests:
             f.write(json.dumps(request, ensure_ascii=False) + '\n')

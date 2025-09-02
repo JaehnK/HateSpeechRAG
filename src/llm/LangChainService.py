@@ -14,10 +14,9 @@ from langfuse import Langfuse
 import json
 import time
 
-from VectorStoreDao import VectorStoreDao
-from Embeddings import EmbeddingModelFactory
-from LLMServices import LLMServiceFactory
-from HateSpeechDao import HateSpeechDBSetup
+from ..dao import VectorStoreDao, HateSpeechDBSetup
+from ..embedding import EmbeddingModelFactory
+from .LLMServices import LLMServiceFactory # LLMServices.py는 같은 llm 디렉토리 안에 있으므로 .LLMServices 사용
 
 from pprint import pprint
 from dotenv import load_dotenv

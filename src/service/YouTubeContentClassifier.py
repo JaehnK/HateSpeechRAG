@@ -9,11 +9,9 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 # from langchain_teddynote import logging
 from dotenv import load_dotenv
 
-from YouTubeDao import YouTubeDBSetup
-from VectorStoreDao import VectorStoreDao
-from Embeddings import EmbeddingModelFactory
-from LLMServices import LLMServiceFactory
-from LangChainService import HateSpeechRAGChain
+from ..dao import YouTubeDBSetup, VectorStoreDao
+from ..embedding import EmbeddingModelFactory
+from ..llm import LLMServiceFactory, RAGService as HateSpeechRAGChain # RAGService로 변경, alias 사용
 
 class YOuTubeContentClassifier:
     def __init__(self):
@@ -25,7 +23,7 @@ class YOuTubeContentClassifier:
         self.cursor = self.connection.cursor()
         
         self.vectorstore_dao = VectorStoreDao(
-            persist_directory="./hate_speech_vectorstore",
+            persist_directory="../../data/vectorstores/hate_speech_vectorstore", # 경로 수정
             embedding_model = EmbeddingModelFactory.create_embedding_model('upstage'),
             collection_name="hate_speech_collection"
         )
