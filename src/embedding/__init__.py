@@ -1,4 +1,4 @@
-from .Embeddings import BaseEmbedding, OpenAIEmbeddingModel, UpstageEmbeddingModel, EmbeddingModelFactory
+from src.embedding.Embeddings import BaseEmbedding, OpenAIEmbeddingModel, UpstageEmbeddingModel, EmbeddingModelFactory
 
 __all__ = [
     "BaseEmbedding",

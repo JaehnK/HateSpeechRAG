@@ -1,11 +1,11 @@
 import os
-from typing import List, Dict, Optional, Any
+import json
+from typing import List, Dict, Any, Optional, Tuple
 from langchain.schema import Document
-from langchain_chroma import Chroma
 from langchain_openai import ChatOpenAI
 
-from ..embedding import BaseEmbedding, EmbeddingModelFactory
-from ..retriever import BaseRetriever, RetrieverFactory
+from src.embedding import BaseEmbedding, EmbeddingModelFactory
+from src.retriever import BaseRetriever, RetrieverFactory
 
 
 class VectorStoreDao:

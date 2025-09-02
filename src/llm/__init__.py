@@ -1,5 +1,5 @@
-from .LLMServices import LLMProvider, BaseLLMService, OpenAILLMService, AnthropicLLMService, GoogleLLMService, LLMServiceFactory
-from .LangChainService import VectorStoreRetriever, SimilarCasesFormatter, HateSpeechClassification, RAGService
+from src.llm.LLMServices import LLMProvider, BaseLLMService, OpenAILLMService, AnthropicLLMService, GoogleLLMService, LLMServiceFactory
+from src.llm.LangChainService import VectorStoreRetriever, SimilarCasesFormatter, HateSpeechClassification, HateSpeechRAGChain
 
 __all__ = [
     "LLMProvider",
@@ -11,5 +11,5 @@ __all__ = [
     "VectorStoreRetriever",
     "SimilarCasesFormatter",
     "HateSpeechClassification",
-    "RAGService",
+    "HateSpeechRAGChain",
 ]

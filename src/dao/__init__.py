@@ -1,8 +1,8 @@
 # src/dao/__init__.py
-from .AsyncYoutubeDao import AsyncYouTubeDao
-from .HateSpeechDao import HateSpeechDBSetup
-from .YouTubeDao import YouTubeDBSetup
-from .VectorStoreDao import VectorStoreDao
+from src.dao.AsyncYoutubeDao import AsyncYouTubeDao
+from src.dao.HateSpeechDao import HateSpeechDBSetup
+from src.dao.YouTubeDao import YouTubeDBSetup
+from src.dao.VectorStoreDao import VectorStoreDao
 
 __all__ = [
     "AsyncYouTubeDao",
