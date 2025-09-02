@@ -81,7 +81,7 @@ class VectorStoreRetriever(BaseRetriever):
         """
         try:
             results = self.vector_store.similarity_search_with_score(query, k=self.k)
-            print(f"{self._type} Retriever: Retrieved with scores")
+            # print(f"{self._type} Retriever: Retrieved with scores")
             return results
         except Exception as e:
             print(f"{self._type} Retriever: Error getting scores - {e}")
