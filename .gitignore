@@ -208,4 +208,4 @@ korean_unsmile_dataset/
 hate_speech_vectorstore/*
 hate_speech_vectorstore/
 
-langfuse/*
+# langfuse/*

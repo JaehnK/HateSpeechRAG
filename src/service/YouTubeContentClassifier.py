@@ -9,14 +9,12 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 # from langchain_teddynote import logging
 from dotenv import load_dotenv
 
-from YouTubeDao import YouTubeDBSetup
-from VectorStoreDao import VectorStoreDao
-from Embeddings import EmbeddingModelFactory
-from LLMServices import LLMServiceFactory
-from LangChainService import HateSpeechRAGChain
+from src.dao import YouTubeDBSetup, VectorStoreDao
+from src.embedding import EmbeddingModelFactory
+from src.llm import LLMServiceFactory, HateSpeechRAGChain # RAGService → HateSpeechRAGChain으로 변경
 
-class YOuTubeContentClassifier:
-    def __init__(self):
+class YouTubeContentClassifier:
+    def __init__(self, llm:str='openai', model_name:str=None):
         load_dotenv()
         # logging.langsmith("HateSpeechTest")
         
@@ -25,17 +23,17 @@ class YOuTubeContentClassifier:
         self.cursor = self.connection.cursor()
         
         self.vectorstore_dao = VectorStoreDao(
-            persist_directory="./hate_speech_vectorstore",
+            persist_directory="../../data/vectorstores/hate_speech_vectorstore", # 경로 수정
             embedding_model = EmbeddingModelFactory.create_embedding_model('upstage'),
             collection_name="hate_speech_collection"
         )
         self.vectorstore_dao.create_vector_store()
         self.vectorstore_dao.initialize_retriever(retriever_type="basic", k=5)
         
-        self.llm = LLMServiceFactory.create_llm_service("openai")
         self.rag_chain = HateSpeechRAGChain(
             dao=self.vectorstore_dao,
-            llm=self.llm.model
+            llm=llm,
+            model_name=model_name
         )
         
         self._init_text_splitter()
@@ -232,7 +230,7 @@ class YOuTubeContentClassifier:
 
 if "__main__" == __name__:
     from pprint import pprint
-    classifier = YOuTubeContentClassifier()
+    classifier = YouTubeContentClassifier()
     
     # print(classifier._load_script("k_byR7RQ-PI", "/home/jaehun/lab/YouTubeHateSpeech"))
     results = classifier.classify_video_script("k_byR7RQ-PI", "/home/jaehun/lab/YouTubeHateSpeech")

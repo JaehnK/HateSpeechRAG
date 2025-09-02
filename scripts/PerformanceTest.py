@@ -1,17 +1,29 @@
+# Standard library imports
+import logging
+import os
+import sys
 from datetime import datetime
+from pprint import pprint
+
+# Third-party imports
 import numpy as np
 import pandas as pd
-import logging
 from langfuse import Langfuse
+from sklearn.metrics import accuracy_score, f1_score, hamming_loss
 
-from sklearn.metrics import f1_score, hamming_loss, accuracy_score
+# Path setup for local imports
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
-from pprint import pprint
-from LangChainService import HateSpeechRAGChain
-from YouTubeDao import *
-from VectorStoreDao import VectorStoreDao
-from Embeddings import EmbeddingModelFactory
+# Local/project imports
+from dao import YouTubeDBSetup, VectorStoreDao
+from embedding import EmbeddingModelFactory
+from llm import RAGService as HateSpeechRAGChain
 
+# Commented imports (consider removing if not needed)
+# from LangChainService import HateSpeechRAGChain
+# from YouTubeDao import *
+# from VectorStoreDao import VectorStoreDao
+# from Embeddings import EmbeddingModelFactory
 
 class HateSpeechAnalyzer:
     """혐오표현 분석 및 DB 업데이트 담당 클래스"""

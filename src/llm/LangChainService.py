@@ -14,10 +14,9 @@ from langfuse import Langfuse
 import json
 import time
 
-from VectorStoreDao import VectorStoreDao
-from Embeddings import EmbeddingModelFactory
-from LLMServices import LLMServiceFactory
-from HateSpeechDao import HateSpeechDBSetup
+from src.dao import VectorStoreDao, HateSpeechDBSetup
+from src.embedding import EmbeddingModelFactory
+from src.llm.LLMServices import LLMServiceFactory
 
 from pprint import pprint
 from dotenv import load_dotenv
