@@ -3,6 +3,7 @@ import json
 from typing import List, Dict, Any, Optional, Tuple
 from langchain.schema import Document
 from langchain_openai import ChatOpenAI
+from langchain_chroma import Chroma
 
 from src.embedding import BaseEmbedding, EmbeddingModelFactory
 from src.retriever import BaseRetriever, RetrieverFactory

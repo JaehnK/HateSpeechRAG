@@ -739,27 +739,41 @@ class YouTubeDBSetup:
             if connection:
                 connection.close()
 
-    def get_unanalyzed_comments(self, limit=100):
-        """아직 분석되지 않은 댓글들 조회"""
+    def get_unanalyzed_comments_cursor(self, batch_size: int = 1000, last_comment_id: str = None):
+        """커서 기반으로 미분석 댓글 조회 (성능 최적화)"""
         connection = self.get_connection()
         if not connection:
-            return None
+            return None, None
         
         try:
             cursor = connection.cursor()
             
-            cursor.execute("""
+            if last_comment_id:
+                # 커서 기반 쿼리 (성능 최적화)
+                query = """
+                SELECT comment_id, comment_text, video_id, author
+                FROM comments 
+                WHERE is_hate_speech IS NULL 
+                AND comment_id > %s
+                ORDER BY comment_id
+                LIMIT %s;
+                """
+                cursor.execute(query, (last_comment_id, batch_size))
+            else:
+                # 첫 번째 배치
+                query = """
                 SELECT comment_id, comment_text, video_id, author
                 FROM comments 
                 WHERE is_hate_speech IS NULL
-                ORDER BY collection_time DESC
+                ORDER BY comment_id
                 LIMIT %s;
-            """, (limit,))
+                """
+                cursor.execute(query, (batch_size,))
             
-            results = cursor.fetchall()
+            rows = cursor.fetchall()
             
             comments = []
-            for row in results:
+            for row in rows:
                 comments.append({
                     'comment_id': row[0],
                     'comment_text': row[1],
@@ -767,17 +781,86 @@ class YouTubeDBSetup:
                     'author': row[3]
                 })
             
-            return comments
+            # 마지막 comment_id 반환 (다음 배치용)
+            last_id = comments[-1]['comment_id'] if comments else None
+            
+            return comments, last_id
             
         except Exception as e:
             print(f"❌ 미분석 댓글 조회 실패: {e}")
-            return None
+            return None, None
         finally:
             if cursor:
                 cursor.close()
             if connection:
                 connection.close()
 
+    def update_hate_speech_analysis_batch(self, analysis_results: list):
+        """혐오표현 분석 결과를 벌크로 업데이트"""
+        if not analysis_results:
+            return {'success_count': 0, 'failed_count': 0, 'failed_comments': []}
+        
+        connection = self.get_connection()
+        if not connection:
+            return {'success_count': 0, 'failed_count': 0, 'failed_comments': []}
+        
+        try:
+            cursor = connection.cursor()
+            
+            success_count = 0
+            failed_comments = []
+            
+            for result in analysis_results:
+                try:
+                    update_sql = """
+                        UPDATE comments 
+                        SET 
+                            is_hate_speech = %s,
+                            categories = %s,
+                            similar_cases_used = %s,
+                            target_group = %s,
+                            hate_type = %s,
+                            used_prompt = %s
+                        WHERE comment_id = %s;
+                    """
+                    
+                    cursor.execute(update_sql, (
+                        result['is_hate_speech'],
+                        result['categories'],
+                        result['similar_cases_used'],
+                        result['target_group'],
+                        result['hate_type'],
+                        result['used_prompt'],
+                        result['comment_id']
+                    ))
+                    
+                    success_count += 1
+                    
+                except Exception as e:
+                    print(f" 댓글 {result['comment_id']} 업데이트 실패: {e}")
+                    failed_comments.append({
+                        'comment_id': result['comment_id'],
+                        'error': str(e)
+                    })
+            
+            # 모든 업데이트 완료 후 커밋
+            connection.commit()
+            
+            return {
+                'success_count': success_count,
+                'failed_count': len(failed_comments),
+                'failed_comments': failed_comments
+            }
+            
+        except Exception as e:
+            print(f" 벌크 업데이트 실패: {e}")
+            connection.rollback()
+            return {'success_count': 0, 'failed_count': len(analysis_results), 'failed_comments': analysis_results}
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
 
 # 사용 예시
 if __name__ == "__main__":

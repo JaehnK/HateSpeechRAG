@@ -11,31 +11,12 @@ from dotenv import load_dotenv
 
 from src.dao import YouTubeDBSetup, VectorStoreDao
 from src.embedding import EmbeddingModelFactory
-from src.llm import LLMServiceFactory, HateSpeechRAGChain # RAGService → HateSpeechRAGChain으로 변경
+from src.llm import LLMServiceFactory, HateSpeechRAGChain
+from src.llm.LangChainService import rag_chain # RAGService → HateSpeechRAGChain으로 변경
 
-class YouTubeContentClassifier:
-    def __init__(self, llm:str='openai', model_name:str=None):
-        load_dotenv()
-        # logging.langsmith("HateSpeechTest")
-        
-        self.youtube_dao = YouTubeDBSetup()
-        self.connection = self.youtube_dao.get_connection()
-        self.cursor = self.connection.cursor()
-        
-        self.vectorstore_dao = VectorStoreDao(
-            persist_directory="../../data/vectorstores/hate_speech_vectorstore", # 경로 수정
-            embedding_model = EmbeddingModelFactory.create_embedding_model('upstage'),
-            collection_name="hate_speech_collection"
-        )
-        self.vectorstore_dao.create_vector_store()
-        self.vectorstore_dao.initialize_retriever(retriever_type="basic", k=5)
-        
-        self.rag_chain = HateSpeechRAGChain(
-            dao=self.vectorstore_dao,
-            llm=llm,
-            model_name=model_name
-        )
-        
+class YouTubeScriptClassifier:
+    def __init__(self, youtube_dao:'YouTubeDBSetup', rag_chain:'rag_chain'):
+        super().__init__(youtube_dao, rag_chain)
         self._init_text_splitter()
 
     def _load_script(self, video_id: str, absolute_dir: str = None) -> str:
@@ -104,7 +85,6 @@ class YouTubeContentClassifier:
                 result.append(sentence)
         
         return result
-
 
     def _split_script_to_sentences(self, script_content: str) -> list:
         """스크립트를 문장 단위로 분할"""

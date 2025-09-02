@@ -1,5 +1,4 @@
-from src.service.YouTubeContentClassifier import YouTubeContentClassifier 
+from YouTubeAnalysisManager import YouTubeAnalysisManager, BaseYouTubeClassifier
 
-__all__ = [
-    "YouTubeContentClassifier"
-]
+__all__ = ['YouTubeAnalysisManager', 
+            'BaseYouTubeClassifier']
