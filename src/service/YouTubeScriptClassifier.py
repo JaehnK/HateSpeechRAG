@@ -67,7 +67,7 @@ class YouTubeScriptClassifier(BaseYouTubeClassifier):
         )
 
     def _split_text_simple(self, text: str) -> List[str]:
-        """가장 간단한 문장 분할"""
+        """ 간단한 문장 분할"""
         if not text or not text.strip():
             return []
         

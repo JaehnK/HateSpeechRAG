@@ -1,0 +1,226 @@
+﻿comment_id,is_hate_speech,categories,similar_cases_used,target_group,hate_type,used_prompt,classification_result
+Ugxck-iT-aNz9FLqSEh4AaABAg,False,['혐오없음'],[],,,"Human: 
+당신은 혐오표현 분류 전문가입니다.
+
+=== 혐오표현 정의 ===
+성별, 장애, 종교, 나이, 출신지역, 인종, 성적지향 등 특정 속성을 이유로  어떤 개인·집단에게 모욕, 비하, 멸시, 위협 또는 차별·폭력의 선전과 선동을 함으로써 차별을 정당화·조장·강화하는 효과를 갖는 표현
+
+=== 분류 카테고리 (복수 선택 가능) ===
+- 성별: 성별 기반 차별 및 비하 (예: ""김치녀"", ""맘충"")
+- 연령: 연령대 기반 차별 및 비하 (예: ""꼰대"", ""애새끼"")
+- 정체성: 출신지역, 인종, 성적지향, 종교 등 (예: ""짱깨"", ""일베충"")
+- 욕설: 직접적 욕설이 포함된 혐오표현 (예: ""시발"", ""새끼"")
+- 기타: 위 카테고리에 해당하지 않는 기타 혐오표현
+- 혐오없음: 혐오표현이 아닌 경우
+
+⚠️ 중요: 하나의 텍스트가 여러 카테고리에 동시에 해당할 수 있습니다.
+예시: ""김치녀들 시발 다 똑같아"" → [""성별"", ""욕설""]
+
+=== 참고할 유사 사례들 ===
+관련 유사 사례가 없습니다.
+
+=== 분석 대상 텍스트 ===
+""제대로 지키야죠""
+
+=== 분석 지침 ===
+1. 검색된 유사 사례들의 분류와 일관성을 평가하세요
+2. 증거 강도는 유사 사례들의 일관성과 유사도를 종합하여 계산하세요
+3. 혐오표현 정의에 엄격히 따라 판단하세요
+4. 해당하는 모든 카테고리를 포함하세요 (단일 또는 복수)
+5. 복합 혐오표현의 경우 각각의 혐오 요소를 모두 식별하세요
+
+=== 복합 혐오표현 예시 ===
+- ""김치녀들 시발 다 똑같아"" → 성별 비하 + 욕설 → [""성별"", ""욕설""]
+- ""꼰대 일베충들"" → 연령 비하 + 정체성 혐오 → [""연령"", ""정체성""]  
+- ""그 똥양인 새끼들 좆같네"" → 정체성 혐오 + 욕설 → [""정체성"", ""욕설""]
+
+The output should be formatted as a JSON instance that conforms to the JSON schema below.
+
+As an example, for the schema {""properties"": {""foo"": {""title"": ""Foo"", ""description"": ""a list of strings"", ""type"": ""array"", ""items"": {""type"": ""string""}}}, ""required"": [""foo""]}
+the object {""foo"": [""bar"", ""baz""]} is a well-formatted instance of the schema. The object {""properties"": {""foo"": [""bar"", ""baz""]}} is not well-formatted.
+
+Here is the output schema:
+```
+{""description"": ""혐오표현 분류 결과"", ""properties"": {""prompt"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""분류에 사용된 프롬프트"", ""title"": ""Prompt""}, ""input_text"": {""description"": ""분석 대상 텍스트"", ""title"": ""Input Text"", ""type"": ""string""}, ""is_hate_speech"": {""description"": ""혐오표현 여부"", ""title"": ""Is Hate Speech"", ""type"": ""boolean""}, ""categories"": {""description"": ""해당하는 혐오표현 카테고리들 (성별, 연령, 정체성, 욕설, 기타, 혐오없음)"", ""items"": {""type"": ""string""}, ""title"": ""Categories"", ""type"": ""array""}, ""evidence_strength"": {""description"": ""증거 강도 (검색 결과 기반, 0.0-1.0)"", ""maximum"": 1.0, ""minimum"": 0.0, ""title"": ""Evidence Strength"", ""type"": ""number""}, ""reasoning"": {""description"": ""분류 근거 및 설명"", ""title"": ""Reasoning"", ""type"": ""string""}, ""similar_cases_used"": {""description"": ""참조한 유사 사례들 (번호)"", ""items"": {""type"": ""string""}, ""title"": ""Similar Cases Used"", ""type"": ""array""}, ""target_group"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""혐오 대상 집단 (해당하는 경우)"", ""title"": ""Target Group""}, ""hate_type"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""혐오 유형 (모욕/비하/멸시/위협/선동 등)"", ""title"": ""Hate Type""}}, ""required"": [""input_text"", ""is_hate_speech"", ""evidence_strength"", ""reasoning""]}
+```
+","prompt='Human: \n당신은 혐오표현 분류 전문가입니다.\n\n=== 혐오표현 정의 ===\n성별, 장애, 종교, 나이, 출신지역, 인종, 성적지향 등 특정 속성을 이유로  어떤 개인·집단에게 모욕, 비하, 멸시, 위협 또는 차별·폭력의 선전과 선동을 함으로써 차별을 정당화·조장·강화하는 효과를 갖는 표현\n\n=== 분류 카테고리 (복수 선택 가능) ===\n- 성별: 성별 기반 차별 및 비하 (예: ""김치녀"", ""맘충"")\n- 연령: 연령대 기반 차별 및 비하 (예: ""꼰대"", ""애새끼"")\n- 정체성: 출신지역, 인종, 성적지향, 종교 등 (예: ""짱깨"", ""일베충"")\n- 욕설: 직접적 욕설이 포함된 혐오표현 (예: ""시발"", ""새끼"")\n- 기타: 위 카테고리에 해당하지 않는 기타 혐오표현\n- 혐오없음: 혐오표현이 아닌 경우\n\n⚠️ 중요: 하나의 텍스트가 여러 카테고리에 동시에 해당할 수 있습니다.\n예시: ""김치녀들 시발 다 똑같아"" → [""성별"", ""욕설""]\n\n=== 참고할 유사 사례들 ===\n관련 유사 사례가 없습니다.\n\n=== 분석 대상 텍스트 ===\n""제대로 지키야죠""\n\n=== 분석 지침 ===\n1. 검색된 유사 사례들의 분류와 일관성을 평가하세요\n2. 증거 강도는 유사 사례들의 일관성과 유사도를 종합하여 계산하세요\n3. 혐오표현 정의에 엄격히 따라 판단하세요\n4. 해당하는 모든 카테고리를 포함하세요 (단일 또는 복수)\n5. 복합 혐오표현의 경우 각각의 혐오 요소를 모두 식별하세요\n\n=== 복합 혐오표현 예시 ===\n- ""김치녀들 시발 다 똑같아"" → 성별 비하 + 욕설 → [""성별"", ""욕설""]\n- ""꼰대 일베충들"" → 연령 비하 + 정체성 혐오 → [""연령"", ""정체성""]  \n- ""그 똥양인 새끼들 좆같네"" → 정체성 혐오 + 욕설 → [""정체성"", ""욕설""]\n\nThe output should be formatted as a JSON instance that conforms to the JSON schema below.\n\nAs an example, for the schema {""properties"": {""foo"": {""title"": ""Foo"", ""description"": ""a list of strings"", ""type"": ""array"", ""items"": {""type"": ""string""}}}, ""required"": [""foo""]}\nthe object {""foo"": [""bar"", ""baz""]} is a well-formatted instance of the schema. The object {""properties"": {""foo"": [""bar"", ""baz""]}} is not well-formatted.\n\nHere is the output schema:\n```\n{""description"": ""혐오표현 분류 결과"", ""properties"": {""prompt"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""분류에 사용된 프롬프트"", ""title"": ""Prompt""}, ""input_text"": {""description"": ""분석 대상 텍스트"", ""title"": ""Input Text"", ""type"": ""string""}, ""is_hate_speech"": {""description"": ""혐오표현 여부"", ""title"": ""Is Hate Speech"", ""type"": ""boolean""}, ""categories"": {""description"": ""해당하는 혐오표현 카테고리들 (성별, 연령, 정체성, 욕설, 기타, 혐오없음)"", ""items"": {""type"": ""string""}, ""title"": ""Categories"", ""type"": ""array""}, ""evidence_strength"": {""description"": ""증거 강도 (검색 결과 기반, 0.0-1.0)"", ""maximum"": 1.0, ""minimum"": 0.0, ""title"": ""Evidence Strength"", ""type"": ""number""}, ""reasoning"": {""description"": ""분류 근거 및 설명"", ""title"": ""Reasoning"", ""type"": ""string""}, ""similar_cases_used"": {""description"": ""참조한 유사 사례들 (번호)"", ""items"": {""type"": ""string""}, ""title"": ""Similar Cases Used"", ""type"": ""array""}, ""target_group"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""혐오 대상 집단 (해당하는 경우)"", ""title"": ""Target Group""}, ""hate_type"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""혐오 유형 (모욕/비하/멸시/위협/선동 등)"", ""title"": ""Hate Type""}}, ""required"": [""input_text"", ""is_hate_speech"", ""evidence_strength"", ""reasoning""]}\n```\n' input_text='제대로 지키야죠' is_hate_speech=False categories=['혐오없음'] evidence_strength=0.2 reasoning='특정 집단을 겨냥한 모욕·비하·위협·선동이나 욕설이 없으며, 오타를 제외하면 일반적 권유 표현입니다.' similar_cases_used=[] target_group=None hate_type=None"
+UgxckiZxerebUW672RJ4AaABAg,False,['혐오없음'],[],,,"Human: 
+당신은 혐오표현 분류 전문가입니다.
+
+=== 혐오표현 정의 ===
+성별, 장애, 종교, 나이, 출신지역, 인종, 성적지향 등 특정 속성을 이유로  어떤 개인·집단에게 모욕, 비하, 멸시, 위협 또는 차별·폭력의 선전과 선동을 함으로써 차별을 정당화·조장·강화하는 효과를 갖는 표현
+
+=== 분류 카테고리 (복수 선택 가능) ===
+- 성별: 성별 기반 차별 및 비하 (예: ""김치녀"", ""맘충"")
+- 연령: 연령대 기반 차별 및 비하 (예: ""꼰대"", ""애새끼"")
+- 정체성: 출신지역, 인종, 성적지향, 종교 등 (예: ""짱깨"", ""일베충"")
+- 욕설: 직접적 욕설이 포함된 혐오표현 (예: ""시발"", ""새끼"")
+- 기타: 위 카테고리에 해당하지 않는 기타 혐오표현
+- 혐오없음: 혐오표현이 아닌 경우
+
+⚠️ 중요: 하나의 텍스트가 여러 카테고리에 동시에 해당할 수 있습니다.
+예시: ""김치녀들 시발 다 똑같아"" → [""성별"", ""욕설""]
+
+=== 참고할 유사 사례들 ===
+관련 유사 사례가 없습니다.
+
+=== 분석 대상 텍스트 ===
+""전직 집배원 입니다, 우정사업본부가 망하길 바라며 하나 씁니다.<br>우체국이 부정선거하는데 집배원을 상당히 잘 활용했습니다.<br>우편수거함, 집배원들 구역마다 대부분 하나씩 있는데,<br>평소에는 일반우편, 등기 이거 숫자 다 세서 우체통 안 바코드<br>찍고 갯수 전산입력해서 가져와야 됐는데, 이게 은근 귀찮기도 하고<br>없는 날도 있어서 사람들 꽤 많이, 그 안에 바코드 폰으로 찍어놓고 다니면서<br>2~3일에 한번 갔습니다. 물론 이것도 걸리면 강제 사직이라곤 하지만<br>사실 그렇게 중요한 일은 아니라서 종종 봐주는 거 알았는데,<br><br>그런데 이것 관련해서 사전투표용지는 다른 우편물이랑<br>달리 분리해서 숫자세서, 전산상으로도 분리해서 갯수 입력 하라했고,<br>하루라도 빠뜨리면 예외없이 강제 사직 시킬거고,<br>외부에도 발설하지 말라며 우정청이 이상한 명령을 했습니다.<br>각각 개인폰 말고 pda랑 업무폰에다 명령문 보냈어서,<br>얘들 3~5년마다 pda 기종 바꾸는데 2020년에 건 없어도<br>2022년에 쓰던 건 아직 쓰고있을겁니다.<br>  <br>2020년 총선,  2022년 대선, 2024년 총선 때 <br>다 가져간 기억 있어요.""
+
+=== 분석 지침 ===
+1. 검색된 유사 사례들의 분류와 일관성을 평가하세요
+2. 증거 강도는 유사 사례들의 일관성과 유사도를 종합하여 계산하세요
+3. 혐오표현 정의에 엄격히 따라 판단하세요
+4. 해당하는 모든 카테고리를 포함하세요 (단일 또는 복수)
+5. 복합 혐오표현의 경우 각각의 혐오 요소를 모두 식별하세요
+
+=== 복합 혐오표현 예시 ===
+- ""김치녀들 시발 다 똑같아"" → 성별 비하 + 욕설 → [""성별"", ""욕설""]
+- ""꼰대 일베충들"" → 연령 비하 + 정체성 혐오 → [""연령"", ""정체성""]  
+- ""그 똥양인 새끼들 좆같네"" → 정체성 혐오 + 욕설 → [""정체성"", ""욕설""]
+
+The output should be formatted as a JSON instance that conforms to the JSON schema below.
+
+As an example, for the schema {""properties"": {""foo"": {""title"": ""Foo"", ""description"": ""a list of strings"", ""type"": ""array"", ""items"": {""type"": ""string""}}}, ""required"": [""foo""]}
+the object {""foo"": [""bar"", ""baz""]} is a well-formatted instance of the schema. The object {""properties"": {""foo"": [""bar"", ""baz""]}} is not well-formatted.
+
+Here is the output schema:
+```
+{""description"": ""혐오표현 분류 결과"", ""properties"": {""prompt"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""분류에 사용된 프롬프트"", ""title"": ""Prompt""}, ""input_text"": {""description"": ""분석 대상 텍스트"", ""title"": ""Input Text"", ""type"": ""string""}, ""is_hate_speech"": {""description"": ""혐오표현 여부"", ""title"": ""Is Hate Speech"", ""type"": ""boolean""}, ""categories"": {""description"": ""해당하는 혐오표현 카테고리들 (성별, 연령, 정체성, 욕설, 기타, 혐오없음)"", ""items"": {""type"": ""string""}, ""title"": ""Categories"", ""type"": ""array""}, ""evidence_strength"": {""description"": ""증거 강도 (검색 결과 기반, 0.0-1.0)"", ""maximum"": 1.0, ""minimum"": 0.0, ""title"": ""Evidence Strength"", ""type"": ""number""}, ""reasoning"": {""description"": ""분류 근거 및 설명"", ""title"": ""Reasoning"", ""type"": ""string""}, ""similar_cases_used"": {""description"": ""참조한 유사 사례들 (번호)"", ""items"": {""type"": ""string""}, ""title"": ""Similar Cases Used"", ""type"": ""array""}, ""target_group"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""혐오 대상 집단 (해당하는 경우)"", ""title"": ""Target Group""}, ""hate_type"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""혐오 유형 (모욕/비하/멸시/위협/선동 등)"", ""title"": ""Hate Type""}}, ""required"": [""input_text"", ""is_hate_speech"", ""evidence_strength"", ""reasoning""]}
+```
+","prompt='Human: \n당신은 혐오표현 분류 전문가입니다.\n\n=== 혐오표현 정의 ===\n성별, 장애, 종교, 나이, 출신지역, 인종, 성적지향 등 특정 속성을 이유로  어떤 개인·집단에게 모욕, 비하, 멸시, 위협 또는 차별·폭력의 선전과 선동을 함으로써 차별을 정당화·조장·강화하는 효과를 갖는 표현\n\n=== 분류 카테고리 (복수 선택 가능) ===\n- 성별: 성별 기반 차별 및 비하 (예: ""김치녀"", ""맘충"")\n- 연령: 연령대 기반 차별 및 비하 (예: ""꼰대"", ""애새끼"")\n- 정체성: 출신지역, 인종, 성적지향, 종교 등 (예: ""짱깨"", ""일베충"")\n- 욕설: 직접적 욕설이 포함된 혐오표현 (예: ""시발"", ""새끼"")\n- 기타: 위 카테고리에 해당하지 않는 기타 혐오표현\n- 혐오없음: 혐오표현이 아닌 경우\n\n⚠️ 중요: 하나의 텍스트가 여러 카테고리에 동시에 해당할 수 있습니다.\n예시: ""김치녀들 시발 다 똑같아"" → [""성별"", ""욕설""]\n\n=== 참고할 유사 사례들 ===\n관련 유사 사례가 없습니다.\n\n=== 분석 대상 텍스트 ===\n""전직 집배원 입니다, 우정사업본부가 망하길 바라며 하나 씁니다.<br>우체국이 부정선거하는데 집배원을 상당히 잘 활용했습니다.<br>우편수거함, 집배원들 구역마다 대부분 하나씩 있는데,<br>평소에는 일반우편, 등기 이거 숫자 다 세서 우체통 안 바코드<br>찍고 갯수 전산입력해서 가져와야 됐는데, 이게 은근 귀찮기도 하고<br>없는 날도 있어서 사람들 꽤 많이, 그 안에 바코드 폰으로 찍어놓고 다니면서<br>2~3일에 한번 갔습니다. 물론 이것도 걸리면 강제 사직이라곤 하지만<br>사실 그렇게 중요한 일은 아니라서 종종 봐주는 거 알았는데,<br><br>그런데 이것 관련해서 사전투표용지는 다른 우편물이랑<br>달리 분리해서 숫자세서, 전산상으로도 분리해서 갯수 입력 하라했고,<br>하루라도 빠뜨리면 예외없이 강제 사직 시킬거고,<br>외부에도 발설하지 말라며 우정청이 이상한 명령을 했습니다.<br>각각 개인폰 말고 pda랑 업무폰에다 명령문 보냈어서,<br>얘들 3~5년마다 pda 기종 바꾸는데 2020년에 건 없어도<br>2022년에 쓰던 건 아직 쓰고있을겁니다.<br>  <br>2020년 총선,  2022년 대선, 2024년 총선 때 <br>다 가져간 기억 있어요.""\n\n=== 분석 지침 ===\n1. 검색된 유사 사례들의 분류와 일관성을 평가하세요\n2. 증거 강도는 유사 사례들의 일관성과 유사도를 종합하여 계산하세요\n3. 혐오표현 정의에 엄격히 따라 판단하세요\n4. 해당하는 모든 카테고리를 포함하세요 (단일 또는 복수)\n5. 복합 혐오표현의 경우 각각의 혐오 요소를 모두 식별하세요\n\n=== 복합 혐오표현 예시 ===\n- ""김치녀들 시발 다 똑같아"" → 성별 비하 + 욕설 → [""성별"", ""욕설""]\n- ""꼰대 일베충들"" → 연령 비하 + 정체성 혐오 → [""연령"", ""정체성""]  \n- ""그 똥양인 새끼들 좆같네"" → 정체성 혐오 + 욕설 → [""정체성"", ""욕설""]\n\nThe output should be formatted as a JSON instance that conforms to the JSON schema below.\n\nAs an example, for the schema {""properties"": {""foo"": {""title"": ""Foo"", ""description"": ""a list of strings"", ""type"": ""array"", ""items"": {""type"": ""string""}}}, ""required"": [""foo""]}\nthe object {""foo"": [""bar"", ""baz""]} is a well-formatted instance of the schema. The object {""properties"": {""foo"": [""bar"", ""baz""]}} is not well-formatted.\n\nHere is the output schema:\n```\n{""description"": ""혐오표현 분류 결과"", ""properties"": {""prompt"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""분류에 사용된 프롬프트"", ""title"": ""Prompt""}, ""input_text"": {""description"": ""분석 대상 텍스트"", ""title"": ""Input Text"", ""type"": ""string""}, ""is_hate_speech"": {""description"": ""혐오표현 여부"", ""title"": ""Is Hate Speech"", ""type"": ""boolean""}, ""categories"": {""description"": ""해당하는 혐오표현 카테고리들 (성별, 연령, 정체성, 욕설, 기타, 혐오없음)"", ""items"": {""type"": ""string""}, ""title"": ""Categories"", ""type"": ""array""}, ""evidence_strength"": {""description"": ""증거 강도 (검색 결과 기반, 0.0-1.0)"", ""maximum"": 1.0, ""minimum"": 0.0, ""title"": ""Evidence Strength"", ""type"": ""number""}, ""reasoning"": {""description"": ""분류 근거 및 설명"", ""title"": ""Reasoning"", ""type"": ""string""}, ""similar_cases_used"": {""description"": ""참조한 유사 사례들 (번호)"", ""items"": {""type"": ""string""}, ""title"": ""Similar Cases Used"", ""type"": ""array""}, ""target_group"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""혐오 대상 집단 (해당하는 경우)"", ""title"": ""Target Group""}, ""hate_type"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""혐오 유형 (모욕/비하/멸시/위협/선동 등)"", ""title"": ""Hate Type""}}, ""required"": [""input_text"", ""is_hate_speech"", ""evidence_strength"", ""reasoning""]}\n```\n' input_text='""전직 집배원 입니다, 우정사업본부가 망하길 바라며 하나 씁니다.<br>우체국이 부정선거하는데 집배원을 상당히 잘 활용했습니다.<br>우편수거함, 집배원들 구역마다 대부분 하나씩 있는데,<br>평소에는 일반우편, 등기 이거 숫자 다 세서 우체통 안 바코드<br>찍고 갯수 전산입력해서 가져와야 됐는데, 이게 은근 귀찮기도 하고<br>없는 날도 있어서 사람들 꽤 많이, 그 안에 바코드 폰으로 찍어놓고 다니면서<br>2~3일에 한번 갔습니다. 물론 이것도 걸리면 강제 사직이라곤 하지만<br>사실 그렇게 중요한 일은 아니라서 종종 봐주는 거 알았는데,<br><br>그런데 이것 관련해서 사전투표용지는 다른 우편물이랑<br>달리 분리해서 숫자세서, 전산상으로도 분리해서 갯수 입력 하라했고,<br>하루라도 빠뜨리면 예외없이 강제 사직 시킬거고,<br>외부에도 발설하지 말라며 우정청이 이상한 명령을 했습니다.<br>각각 개인폰 말고 pda랑 업무폰에다 명령문 보냈어서,<br>얘들 3~5년마다 pda 기종 바꾸는데 2020년에 건 없어도<br>2022년에 쓰던 건 아직 쓰고있을겁니다.<br>  <br>2020년 총선,  2022년 대선, 2024년 총선 때 <br>다 가져간 기억 있어요.""' is_hate_speech=False categories=['혐오없음'] evidence_strength=0.0 reasoning='특정 보호속성(성별, 연령, 인종, 출신지역, 종교, 성적지향 등)을 이유로 한 모욕·비하·위협이나 차별 선동이 없습니다. 직군/기관(집배원, 우정사업본부)에 대한 비판과 의혹 제기이며, 직접적 욕설도 없음. 따라서 혐오표현에 해당하지 않습니다.' similar_cases_used=[] target_group=None hate_type=None"
+UgxckiZxerebUW672RJ4AaABAg.AJ5LLk94PQcAJ5cRilIk51,False,['혐오없음'],[],,,"Human: 
+당신은 혐오표현 분류 전문가입니다.
+
+=== 혐오표현 정의 ===
+성별, 장애, 종교, 나이, 출신지역, 인종, 성적지향 등 특정 속성을 이유로  어떤 개인·집단에게 모욕, 비하, 멸시, 위협 또는 차별·폭력의 선전과 선동을 함으로써 차별을 정당화·조장·강화하는 효과를 갖는 표현
+
+=== 분류 카테고리 (복수 선택 가능) ===
+- 성별: 성별 기반 차별 및 비하 (예: ""김치녀"", ""맘충"")
+- 연령: 연령대 기반 차별 및 비하 (예: ""꼰대"", ""애새끼"")
+- 정체성: 출신지역, 인종, 성적지향, 종교 등 (예: ""짱깨"", ""일베충"")
+- 욕설: 직접적 욕설이 포함된 혐오표현 (예: ""시발"", ""새끼"")
+- 기타: 위 카테고리에 해당하지 않는 기타 혐오표현
+- 혐오없음: 혐오표현이 아닌 경우
+
+⚠️ 중요: 하나의 텍스트가 여러 카테고리에 동시에 해당할 수 있습니다.
+예시: ""김치녀들 시발 다 똑같아"" → [""성별"", ""욕설""]
+
+=== 참고할 유사 사례들 ===
+관련 유사 사례가 없습니다.
+
+=== 분석 대상 텍스트 ===
+""그리고 걔들 저거 기종 곧 바꿀때 입니다, 얼른 기습해서 다 포렌식 해야됩니다, 저거 제조업체는 이름도 몰랐는데<br>느낌상 코나아이랑 연관이 없진 않을 것 같아요""
+
+=== 분석 지침 ===
+1. 검색된 유사 사례들의 분류와 일관성을 평가하세요
+2. 증거 강도는 유사 사례들의 일관성과 유사도를 종합하여 계산하세요
+3. 혐오표현 정의에 엄격히 따라 판단하세요
+4. 해당하는 모든 카테고리를 포함하세요 (단일 또는 복수)
+5. 복합 혐오표현의 경우 각각의 혐오 요소를 모두 식별하세요
+
+=== 복합 혐오표현 예시 ===
+- ""김치녀들 시발 다 똑같아"" → 성별 비하 + 욕설 → [""성별"", ""욕설""]
+- ""꼰대 일베충들"" → 연령 비하 + 정체성 혐오 → [""연령"", ""정체성""]  
+- ""그 똥양인 새끼들 좆같네"" → 정체성 혐오 + 욕설 → [""정체성"", ""욕설""]
+
+The output should be formatted as a JSON instance that conforms to the JSON schema below.
+
+As an example, for the schema {""properties"": {""foo"": {""title"": ""Foo"", ""description"": ""a list of strings"", ""type"": ""array"", ""items"": {""type"": ""string""}}}, ""required"": [""foo""]}
+the object {""foo"": [""bar"", ""baz""]} is a well-formatted instance of the schema. The object {""properties"": {""foo"": [""bar"", ""baz""]}} is not well-formatted.
+
+Here is the output schema:
+```
+{""description"": ""혐오표현 분류 결과"", ""properties"": {""prompt"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""분류에 사용된 프롬프트"", ""title"": ""Prompt""}, ""input_text"": {""description"": ""분석 대상 텍스트"", ""title"": ""Input Text"", ""type"": ""string""}, ""is_hate_speech"": {""description"": ""혐오표현 여부"", ""title"": ""Is Hate Speech"", ""type"": ""boolean""}, ""categories"": {""description"": ""해당하는 혐오표현 카테고리들 (성별, 연령, 정체성, 욕설, 기타, 혐오없음)"", ""items"": {""type"": ""string""}, ""title"": ""Categories"", ""type"": ""array""}, ""evidence_strength"": {""description"": ""증거 강도 (검색 결과 기반, 0.0-1.0)"", ""maximum"": 1.0, ""minimum"": 0.0, ""title"": ""Evidence Strength"", ""type"": ""number""}, ""reasoning"": {""description"": ""분류 근거 및 설명"", ""title"": ""Reasoning"", ""type"": ""string""}, ""similar_cases_used"": {""description"": ""참조한 유사 사례들 (번호)"", ""items"": {""type"": ""string""}, ""title"": ""Similar Cases Used"", ""type"": ""array""}, ""target_group"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""혐오 대상 집단 (해당하는 경우)"", ""title"": ""Target Group""}, ""hate_type"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""혐오 유형 (모욕/비하/멸시/위협/선동 등)"", ""title"": ""Hate Type""}}, ""required"": [""input_text"", ""is_hate_speech"", ""evidence_strength"", ""reasoning""]}
+```
+","prompt='Human: \n당신은 혐오표현 분류 전문가입니다.\n\n=== 혐오표현 정의 ===\n성별, 장애, 종교, 나이, 출신지역, 인종, 성적지향 등 특정 속성을 이유로  어떤 개인·집단에게 모욕, 비하, 멸시, 위협 또는 차별·폭력의 선전과 선동을 함으로써 차별을 정당화·조장·강화하는 효과를 갖는 표현\n\n=== 분류 카테고리 (복수 선택 가능) ===\n- 성별: 성별 기반 차별 및 비하 (예: ""김치녀"", ""맘충"")\n- 연령: 연령대 기반 차별 및 비하 (예: ""꼰대"", ""애새끼"")\n- 정체성: 출신지역, 인종, 성적지향, 종교 등 (예: ""짱깨"", ""일베충"")\n- 욕설: 직접적 욕설이 포함된 혐오표현 (예: ""시발"", ""새끼"")\n- 기타: 위 카테고리에 해당하지 않는 기타 혐오표현\n- 혐오없음: 혐오표현이 아닌 경우\n\n⚠️ 중요: 하나의 텍스트가 여러 카테고리에 동시에 해당할 수 있습니다.\n예시: ""김치녀들 시발 다 똑같아"" → [""성별"", ""욕설""]\n\n=== 참고할 유사 사례들 ===\n관련 유사 사례가 없습니다.\n\n=== 분석 대상 텍스트 ===\n""그리고 걔들 저거 기종 곧 바꿀때 입니다, 얼른 기습해서 다 포렌식 해야됩니다, 저거 제조업체는 이름도 몰랐는데<br>느낌상 코나아이랑 연관이 없진 않을 것 같아요""\n\n=== 분석 지침 ===\n1. 검색된 유사 사례들의 분류와 일관성을 평가하세요\n2. 증거 강도는 유사 사례들의 일관성과 유사도를 종합하여 계산하세요\n3. 혐오표현 정의에 엄격히 따라 판단하세요\n4. 해당하는 모든 카테고리를 포함하세요 (단일 또는 복수)\n5. 복합 혐오표현의 경우 각각의 혐오 요소를 모두 식별하세요\n\n=== 복합 혐오표현 예시 ===\n- ""김치녀들 시발 다 똑같아"" → 성별 비하 + 욕설 → [""성별"", ""욕설""]\n- ""꼰대 일베충들"" → 연령 비하 + 정체성 혐오 → [""연령"", ""정체성""]  \n- ""그 똥양인 새끼들 좆같네"" → 정체성 혐오 + 욕설 → [""정체성"", ""욕설""]\n\nThe output should be formatted as a JSON instance that conforms to the JSON schema below.\n\nAs an example, for the schema {""properties"": {""foo"": {""title"": ""Foo"", ""description"": ""a list of strings"", ""type"": ""array"", ""items"": {""type"": ""string""}}}, ""required"": [""foo""]}\nthe object {""foo"": [""bar"", ""baz""]} is a well-formatted instance of the schema. The object {""properties"": {""foo"": [""bar"", ""baz""]}} is not well-formatted.\n\nHere is the output schema:\n```\n{""description"": ""혐오표현 분류 결과"", ""properties"": {""prompt"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""분류에 사용된 프롬프트"", ""title"": ""Prompt""}, ""input_text"": {""description"": ""분석 대상 텍스트"", ""title"": ""Input Text"", ""type"": ""string""}, ""is_hate_speech"": {""description"": ""혐오표현 여부"", ""title"": ""Is Hate Speech"", ""type"": ""boolean""}, ""categories"": {""description"": ""해당하는 혐오표현 카테고리들 (성별, 연령, 정체성, 욕설, 기타, 혐오없음)"", ""items"": {""type"": ""string""}, ""title"": ""Categories"", ""type"": ""array""}, ""evidence_strength"": {""description"": ""증거 강도 (검색 결과 기반, 0.0-1.0)"", ""maximum"": 1.0, ""minimum"": 0.0, ""title"": ""Evidence Strength"", ""type"": ""number""}, ""reasoning"": {""description"": ""분류 근거 및 설명"", ""title"": ""Reasoning"", ""type"": ""string""}, ""similar_cases_used"": {""description"": ""참조한 유사 사례들 (번호)"", ""items"": {""type"": ""string""}, ""title"": ""Similar Cases Used"", ""type"": ""array""}, ""target_group"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""혐오 대상 집단 (해당하는 경우)"", ""title"": ""Target Group""}, ""hate_type"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""혐오 유형 (모욕/비하/멸시/위협/선동 등)"", ""title"": ""Hate Type""}}, ""required"": [""input_text"", ""is_hate_speech"", ""evidence_strength"", ""reasoning""]}\n```\n' input_text='""그리고 걔들 저거 기종 곧 바꿀때 입니다, 얼른 기습해서 다 포렌식 해야됩니다, 저거 제조업체는 이름도 몰랐는데<br>느낌상 코나아이랑 연관이 없진 않을 것 같아요""' is_hate_speech=False categories=['혐오없음'] evidence_strength=0.9 reasoning='특정 보호 대상 집단(성별, 연령, 인종, 종교, 성적지향, 출신지역/국가/민족 등)을 겨냥한 모욕, 비하, 멸시, 위협, 차별 선동이 없음. 욕설도 없고, 언급된 대상은 특정 기업/기기 관련 사안으로 보호 속성 기반의 혐오표현이 아니다.' similar_cases_used=[] target_group=None hate_type=None"
+UgxckiZxerebUW672RJ4AaABAg.AJ5LLk94PQcAJ5e3ClWQwp,False,['혐오없음'],[],,,"Human: 
+당신은 혐오표현 분류 전문가입니다.
+
+=== 혐오표현 정의 ===
+성별, 장애, 종교, 나이, 출신지역, 인종, 성적지향 등 특정 속성을 이유로  어떤 개인·집단에게 모욕, 비하, 멸시, 위협 또는 차별·폭력의 선전과 선동을 함으로써 차별을 정당화·조장·강화하는 효과를 갖는 표현
+
+=== 분류 카테고리 (복수 선택 가능) ===
+- 성별: 성별 기반 차별 및 비하 (예: ""김치녀"", ""맘충"")
+- 연령: 연령대 기반 차별 및 비하 (예: ""꼰대"", ""애새끼"")
+- 정체성: 출신지역, 인종, 성적지향, 종교 등 (예: ""짱깨"", ""일베충"")
+- 욕설: 직접적 욕설이 포함된 혐오표현 (예: ""시발"", ""새끼"")
+- 기타: 위 카테고리에 해당하지 않는 기타 혐오표현
+- 혐오없음: 혐오표현이 아닌 경우
+
+⚠️ 중요: 하나의 텍스트가 여러 카테고리에 동시에 해당할 수 있습니다.
+예시: ""김치녀들 시발 다 똑같아"" → [""성별"", ""욕설""]
+
+=== 참고할 유사 사례들 ===
+관련 유사 사례가 없습니다.
+
+=== 분석 대상 텍스트 ===
+""박주현 변호사님께 제보 부탁드립니다 🙏 🇰🇷""
+
+=== 분석 지침 ===
+1. 검색된 유사 사례들의 분류와 일관성을 평가하세요
+2. 증거 강도는 유사 사례들의 일관성과 유사도를 종합하여 계산하세요
+3. 혐오표현 정의에 엄격히 따라 판단하세요
+4. 해당하는 모든 카테고리를 포함하세요 (단일 또는 복수)
+5. 복합 혐오표현의 경우 각각의 혐오 요소를 모두 식별하세요
+
+=== 복합 혐오표현 예시 ===
+- ""김치녀들 시발 다 똑같아"" → 성별 비하 + 욕설 → [""성별"", ""욕설""]
+- ""꼰대 일베충들"" → 연령 비하 + 정체성 혐오 → [""연령"", ""정체성""]  
+- ""그 똥양인 새끼들 좆같네"" → 정체성 혐오 + 욕설 → [""정체성"", ""욕설""]
+
+The output should be formatted as a JSON instance that conforms to the JSON schema below.
+
+As an example, for the schema {""properties"": {""foo"": {""title"": ""Foo"", ""description"": ""a list of strings"", ""type"": ""array"", ""items"": {""type"": ""string""}}}, ""required"": [""foo""]}
+the object {""foo"": [""bar"", ""baz""]} is a well-formatted instance of the schema. The object {""properties"": {""foo"": [""bar"", ""baz""]}} is not well-formatted.
+
+Here is the output schema:
+```
+{""description"": ""혐오표현 분류 결과"", ""properties"": {""prompt"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""분류에 사용된 프롬프트"", ""title"": ""Prompt""}, ""input_text"": {""description"": ""분석 대상 텍스트"", ""title"": ""Input Text"", ""type"": ""string""}, ""is_hate_speech"": {""description"": ""혐오표현 여부"", ""title"": ""Is Hate Speech"", ""type"": ""boolean""}, ""categories"": {""description"": ""해당하는 혐오표현 카테고리들 (성별, 연령, 정체성, 욕설, 기타, 혐오없음)"", ""items"": {""type"": ""string""}, ""title"": ""Categories"", ""type"": ""array""}, ""evidence_strength"": {""description"": ""증거 강도 (검색 결과 기반, 0.0-1.0)"", ""maximum"": 1.0, ""minimum"": 0.0, ""title"": ""Evidence Strength"", ""type"": ""number""}, ""reasoning"": {""description"": ""분류 근거 및 설명"", ""title"": ""Reasoning"", ""type"": ""string""}, ""similar_cases_used"": {""description"": ""참조한 유사 사례들 (번호)"", ""items"": {""type"": ""string""}, ""title"": ""Similar Cases Used"", ""type"": ""array""}, ""target_group"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""혐오 대상 집단 (해당하는 경우)"", ""title"": ""Target Group""}, ""hate_type"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""혐오 유형 (모욕/비하/멸시/위협/선동 등)"", ""title"": ""Hate Type""}}, ""required"": [""input_text"", ""is_hate_speech"", ""evidence_strength"", ""reasoning""]}
+```
+","prompt='Human: \n당신은 혐오표현 분류 전문가입니다.\n\n=== 혐오표현 정의 ===\n성별, 장애, 종교, 나이, 출신지역, 인종, 성적지향 등 특정 속성을 이유로  어떤 개인·집단에게 모욕, 비하, 멸시, 위협 또는 차별·폭력의 선전과 선동을 함으로써 차별을 정당화·조장·강화하는 효과를 갖는 표현\n\n=== 분류 카테고리 (복수 선택 가능) ===\n- 성별: 성별 기반 차별 및 비하 (예: ""김치녀"", ""맘충"")\n- 연령: 연령대 기반 차별 및 비하 (예: ""꼰대"", ""애새끼"")\n- 정체성: 출신지역, 인종, 성적지향, 종교 등 (예: ""짱깨"", ""일베충"")\n- 욕설: 직접적 욕설이 포함된 혐오표현 (예: ""시발"", ""새끼"")\n- 기타: 위 카테고리에 해당하지 않는 기타 혐오표현\n- 혐오없음: 혐오표현이 아닌 경우\n\n⚠️ 중요: 하나의 텍스트가 여러 카테고리에 동시에 해당할 수 있습니다.\n예시: ""김치녀들 시발 다 똑같아"" → [""성별"", ""욕설""]\n\n=== 참고할 유사 사례들 ===\n관련 유사 사례가 없습니다.\n\n=== 분석 대상 텍스트 ===\n""박주현 변호사님께 제보 부탁드립니다 🙏 🇰🇷""\n\n=== 분석 지침 ===\n1. 검색된 유사 사례들의 분류와 일관성을 평가하세요\n2. 증거 강도는 유사 사례들의 일관성과 유사도를 종합하여 계산하세요\n3. 혐오표현 정의에 엄격히 따라 판단하세요\n4. 해당하는 모든 카테고리를 포함하세요 (단일 또는 복수)\n5. 복합 혐오표현의 경우 각각의 혐오 요소를 모두 식별하세요\n\n=== 복합 혐오표현 예시 ===\n- ""김치녀들 시발 다 똑같아"" → 성별 비하 + 욕설 → [""성별"", ""욕설""]\n- ""꼰대 일베충들"" → 연령 비하 + 정체성 혐오 → [""연령"", ""정체성""]  \n- ""그 똥양인 새끼들 좆같네"" → 정체성 혐오 + 욕설 → [""정체성"", ""욕설""]\n\nThe output should be formatted as a JSON instance that conforms to the JSON schema below.\n\nAs an example, for the schema {""properties"": {""foo"": {""title"": ""Foo"", ""description"": ""a list of strings"", ""type"": ""array"", ""items"": {""type"": ""string""}}}, ""required"": [""foo""]}\nthe object {""foo"": [""bar"", ""baz""]} is a well-formatted instance of the schema. The object {""properties"": {""foo"": [""bar"", ""baz""]}} is not well-formatted.\n\nHere is the output schema:\n```\n{""description"": ""혐오표현 분류 결과"", ""properties"": {""prompt"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""분류에 사용된 프롬프트"", ""title"": ""Prompt""}, ""input_text"": {""description"": ""분석 대상 텍스트"", ""title"": ""Input Text"", ""type"": ""string""}, ""is_hate_speech"": {""description"": ""혐오표현 여부"", ""title"": ""Is Hate Speech"", ""type"": ""boolean""}, ""categories"": {""description"": ""해당하는 혐오표현 카테고리들 (성별, 연령, 정체성, 욕설, 기타, 혐오없음)"", ""items"": {""type"": ""string""}, ""title"": ""Categories"", ""type"": ""array""}, ""evidence_strength"": {""description"": ""증거 강도 (검색 결과 기반, 0.0-1.0)"", ""maximum"": 1.0, ""minimum"": 0.0, ""title"": ""Evidence Strength"", ""type"": ""number""}, ""reasoning"": {""description"": ""분류 근거 및 설명"", ""title"": ""Reasoning"", ""type"": ""string""}, ""similar_cases_used"": {""description"": ""참조한 유사 사례들 (번호)"", ""items"": {""type"": ""string""}, ""title"": ""Similar Cases Used"", ""type"": ""array""}, ""target_group"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""혐오 대상 집단 (해당하는 경우)"", ""title"": ""Target Group""}, ""hate_type"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""혐오 유형 (모욕/비하/멸시/위협/선동 등)"", ""title"": ""Hate Type""}}, ""required"": [""input_text"", ""is_hate_speech"", ""evidence_strength"", ""reasoning""]}\n```\n' input_text='박주현 변호사님께 제보 부탁드립니다 🙏 🇰🇷' is_hate_speech=False categories=['혐오없음'] evidence_strength=0.9 reasoning='정중한 요청 표현이며 특정 집단이나 개인을 속성 기반으로 비하, 모욕, 위협, 차별 선동하는 내용이 전혀 없다. 욕설이나 멸칭도 포함되지 않는다.' similar_cases_used=[] target_group=None hate_type=None"
+UgxckiZxerebUW672RJ4AaABAg.AJ5LLk94PQcAJ5eMnUR5eR,False,['혐오없음'],[],,,"Human: 
+당신은 혐오표현 분류 전문가입니다.
+
+=== 혐오표현 정의 ===
+성별, 장애, 종교, 나이, 출신지역, 인종, 성적지향 등 특정 속성을 이유로  어떤 개인·집단에게 모욕, 비하, 멸시, 위협 또는 차별·폭력의 선전과 선동을 함으로써 차별을 정당화·조장·강화하는 효과를 갖는 표현
+
+=== 분류 카테고리 (복수 선택 가능) ===
+- 성별: 성별 기반 차별 및 비하 (예: ""김치녀"", ""맘충"")
+- 연령: 연령대 기반 차별 및 비하 (예: ""꼰대"", ""애새끼"")
+- 정체성: 출신지역, 인종, 성적지향, 종교 등 (예: ""짱깨"", ""일베충"")
+- 욕설: 직접적 욕설이 포함된 혐오표현 (예: ""시발"", ""새끼"")
+- 기타: 위 카테고리에 해당하지 않는 기타 혐오표현
+- 혐오없음: 혐오표현이 아닌 경우
+
+⚠️ 중요: 하나의 텍스트가 여러 카테고리에 동시에 해당할 수 있습니다.
+예시: ""김치녀들 시발 다 똑같아"" → [""성별"", ""욕설""]
+
+=== 참고할 유사 사례들 ===
+관련 유사 사례가 없습니다.
+
+=== 분석 대상 텍스트 ===
+""@@banistar4709 이미 저거보다 간략적이지만 카톡 정지먹기 전에<br>말했던 건 어떤분이 제보해놔서 이미 들어갔을겁니다""
+
+=== 분석 지침 ===
+1. 검색된 유사 사례들의 분류와 일관성을 평가하세요
+2. 증거 강도는 유사 사례들의 일관성과 유사도를 종합하여 계산하세요
+3. 혐오표현 정의에 엄격히 따라 판단하세요
+4. 해당하는 모든 카테고리를 포함하세요 (단일 또는 복수)
+5. 복합 혐오표현의 경우 각각의 혐오 요소를 모두 식별하세요
+
+=== 복합 혐오표현 예시 ===
+- ""김치녀들 시발 다 똑같아"" → 성별 비하 + 욕설 → [""성별"", ""욕설""]
+- ""꼰대 일베충들"" → 연령 비하 + 정체성 혐오 → [""연령"", ""정체성""]  
+- ""그 똥양인 새끼들 좆같네"" → 정체성 혐오 + 욕설 → [""정체성"", ""욕설""]
+
+The output should be formatted as a JSON instance that conforms to the JSON schema below.
+
+As an example, for the schema {""properties"": {""foo"": {""title"": ""Foo"", ""description"": ""a list of strings"", ""type"": ""array"", ""items"": {""type"": ""string""}}}, ""required"": [""foo""]}
+the object {""foo"": [""bar"", ""baz""]} is a well-formatted instance of the schema. The object {""properties"": {""foo"": [""bar"", ""baz""]}} is not well-formatted.
+
+Here is the output schema:
+```
+{""description"": ""혐오표현 분류 결과"", ""properties"": {""prompt"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""분류에 사용된 프롬프트"", ""title"": ""Prompt""}, ""input_text"": {""description"": ""분석 대상 텍스트"", ""title"": ""Input Text"", ""type"": ""string""}, ""is_hate_speech"": {""description"": ""혐오표현 여부"", ""title"": ""Is Hate Speech"", ""type"": ""boolean""}, ""categories"": {""description"": ""해당하는 혐오표현 카테고리들 (성별, 연령, 정체성, 욕설, 기타, 혐오없음)"", ""items"": {""type"": ""string""}, ""title"": ""Categories"", ""type"": ""array""}, ""evidence_strength"": {""description"": ""증거 강도 (검색 결과 기반, 0.0-1.0)"", ""maximum"": 1.0, ""minimum"": 0.0, ""title"": ""Evidence Strength"", ""type"": ""number""}, ""reasoning"": {""description"": ""분류 근거 및 설명"", ""title"": ""Reasoning"", ""type"": ""string""}, ""similar_cases_used"": {""description"": ""참조한 유사 사례들 (번호)"", ""items"": {""type"": ""string""}, ""title"": ""Similar Cases Used"", ""type"": ""array""}, ""target_group"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""혐오 대상 집단 (해당하는 경우)"", ""title"": ""Target Group""}, ""hate_type"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""혐오 유형 (모욕/비하/멸시/위협/선동 등)"", ""title"": ""Hate Type""}}, ""required"": [""input_text"", ""is_hate_speech"", ""evidence_strength"", ""reasoning""]}
+```
+","prompt='Human: \n당신은 혐오표현 분류 전문가입니다.\n\n=== 혐오표현 정의 ===\n성별, 장애, 종교, 나이, 출신지역, 인종, 성적지향 등 특정 속성을 이유로  어떤 개인·집단에게 모욕, 비하, 멸시, 위협 또는 차별·폭력의 선전과 선동을 함으로써 차별을 정당화·조장·강화하는 효과를 갖는 표현\n\n=== 분류 카테고리 (복수 선택 가능) ===\n- 성별: 성별 기반 차별 및 비하 (예: ""김치녀"", ""맘충"")\n- 연령: 연령대 기반 차별 및 비하 (예: ""꼰대"", ""애새끼"")\n- 정체성: 출신지역, 인종, 성적지향, 종교 등 (예: ""짱깨"", ""일베충"")\n- 욕설: 직접적 욕설이 포함된 혐오표현 (예: ""시발"", ""새끼"")\n- 기타: 위 카테고리에 해당하지 않는 기타 혐오표현\n- 혐오없음: 혐오표현이 아닌 경우\n\n⚠️ 중요: 하나의 텍스트가 여러 카테고리에 동시에 해당할 수 있습니다.\n예시: ""김치녀들 시발 다 똑같아"" → [""성별"", ""욕설""]\n\n=== 참고할 유사 사례들 ===\n관련 유사 사례가 없습니다.\n\n=== 분석 대상 텍스트 ===\n""@@banistar4709 이미 저거보다 간략적이지만 카톡 정지먹기 전에<br>말했던 건 어떤분이 제보해놔서 이미 들어갔을겁니다""\n\n=== 분석 지침 ===\n1. 검색된 유사 사례들의 분류와 일관성을 평가하세요\n2. 증거 강도는 유사 사례들의 일관성과 유사도를 종합하여 계산하세요\n3. 혐오표현 정의에 엄격히 따라 판단하세요\n4. 해당하는 모든 카테고리를 포함하세요 (단일 또는 복수)\n5. 복합 혐오표현의 경우 각각의 혐오 요소를 모두 식별하세요\n\n=== 복합 혐오표현 예시 ===\n- ""김치녀들 시발 다 똑같아"" → 성별 비하 + 욕설 → [""성별"", ""욕설""]\n- ""꼰대 일베충들"" → 연령 비하 + 정체성 혐오 → [""연령"", ""정체성""]  \n- ""그 똥양인 새끼들 좆같네"" → 정체성 혐오 + 욕설 → [""정체성"", ""욕설""]\n\nThe output should be formatted as a JSON instance that conforms to the JSON schema below.\n\nAs an example, for the schema {""properties"": {""foo"": {""title"": ""Foo"", ""description"": ""a list of strings"", ""type"": ""array"", ""items"": {""type"": ""string""}}}, ""required"": [""foo""]}\nthe object {""foo"": [""bar"", ""baz""]} is a well-formatted instance of the schema. The object {""properties"": {""foo"": [""bar"", ""baz""]}} is not well-formatted.\n\nHere is the output schema:\n```\n{""description"": ""혐오표현 분류 결과"", ""properties"": {""prompt"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""분류에 사용된 프롬프트"", ""title"": ""Prompt""}, ""input_text"": {""description"": ""분석 대상 텍스트"", ""title"": ""Input Text"", ""type"": ""string""}, ""is_hate_speech"": {""description"": ""혐오표현 여부"", ""title"": ""Is Hate Speech"", ""type"": ""boolean""}, ""categories"": {""description"": ""해당하는 혐오표현 카테고리들 (성별, 연령, 정체성, 욕설, 기타, 혐오없음)"", ""items"": {""type"": ""string""}, ""title"": ""Categories"", ""type"": ""array""}, ""evidence_strength"": {""description"": ""증거 강도 (검색 결과 기반, 0.0-1.0)"", ""maximum"": 1.0, ""minimum"": 0.0, ""title"": ""Evidence Strength"", ""type"": ""number""}, ""reasoning"": {""description"": ""분류 근거 및 설명"", ""title"": ""Reasoning"", ""type"": ""string""}, ""similar_cases_used"": {""description"": ""참조한 유사 사례들 (번호)"", ""items"": {""type"": ""string""}, ""title"": ""Similar Cases Used"", ""type"": ""array""}, ""target_group"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""혐오 대상 집단 (해당하는 경우)"", ""title"": ""Target Group""}, ""hate_type"": {""anyOf"": [{""type"": ""string""}, {""type"": ""null""}], ""default"": null, ""description"": ""혐오 유형 (모욕/비하/멸시/위협/선동 등)"", ""title"": ""Hate Type""}}, ""required"": [""input_text"", ""is_hate_speech"", ""evidence_strength"", ""reasoning""]}\n```\n' input_text='""@@banistar4709 이미 저거보다 간략적이지만 카톡 정지먹기 전에<br>말했던 건 어떤분이 제보해놔서 이미 들어갔을겁니다""' is_hate_speech=False categories=['혐오없음'] evidence_strength=0.0 reasoning='특정 집단이나 정체성을 이유로 한 모욕/비하/멸시/위협/선동이 전혀 없으며, 욕설도 없음. 단순히 카톡 정지 및 제보 상황을 언급하는 내용임.' similar_cases_used=[] target_group=None hate_type=None"

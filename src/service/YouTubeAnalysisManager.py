@@ -43,7 +43,7 @@ class YouTubeAnalysisManager:
             model_name=model_name
         )
 
-    def classify_all_comments(self, batch_size: int = 1000, limit: int = None, offset: int = 0):
+    def classify_all_comments(self, batch_size: int = 1000, limit: int = None, offset: int = 0, do_once:bool=False):
         """모든 댓글을 분류하는 함수 (관리자 역할)"""
         print("🔄 댓글 분류 시작...")
         

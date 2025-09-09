@@ -40,7 +40,7 @@ class YouTubeCommentClassifier(BaseYouTubeClassifier):
             print(f"❌ 댓글 로드 실패: {e}")
             return pd.DataFrame()
 
-    def classify_all_comments(self, batch_size: int = 1000, limit: int = None, offset: int = 0):
+    def classify_all_comments(self, batch_size: int = 1000, limit: int = None, offset: int = 0, do_once: bool = False):
         """모든 댓글을 분류하는 함수"""
         total_processed = 0
         total_hate_speech = 0
@@ -54,11 +54,15 @@ class YouTubeCommentClassifier(BaseYouTubeClassifier):
         os.makedirs(save_dir, exist_ok=True)
         print(f"📄 배치 결과는 '{save_dir}'에 저장됩니다.")
         
-        print("🔄 댓글 분류 시작...")
+        # do_once가 True일 때 알림 출력
+        if do_once:
+            print("🔄 테스트 모드: 한 배치만 처리합니다...")
+        else:
+            print("🔄 댓글 분류 시작...")
         
         for batch_comments in self.youtube_dao.get_comments_generator(
             batch_size=batch_size, 
-            include_analysis=True, # False -> True
+            include_analysis=True,
             _offset=offset
         ):
             unanalyzed_comments = [
@@ -67,6 +71,10 @@ class YouTubeCommentClassifier(BaseYouTubeClassifier):
             ]
             
             if not unanalyzed_comments:
+                # do_once 모드에서는 빈 배치라도 바로 종료
+                if do_once:
+                    print("⚠️ 테스트 모드: 미분석 댓글이 없습니다.")
+                    break
                 continue
                 
             batch_count += 1
@@ -127,6 +135,7 @@ class YouTubeCommentClassifier(BaseYouTubeClassifier):
 
             # DB 업데이트
             update_result = self.youtube_dao.update_hate_speech_analysis_batch(batch_results)
+            print(f"update result: {update_result}")
         
             # DB 업데이트 실패한 댓글들도 수집
             if update_result['failed_count'] > 0:
@@ -149,11 +158,22 @@ class YouTubeCommentClassifier(BaseYouTubeClassifier):
             print(f"   DB 업데이트: {update_result['success_count']}개 성공, {update_result['failed_count']}개 실패")
             print(f"   현재 offset: {current_offset}")
         
-            # limit 체크 (한 번만)
+            # do_once가 True이면 첫 번째 배치 후 바로 종료
+            if do_once:
+                print("🛑 테스트 모드: 한 배치 처리 완료, 종료합니다.")
+                break
+            
+            # limit 체크 (일반 모드에서만)
             if limit and total_processed >= limit:
                 break
             
         hate_speech_ratio = total_hate_speech / total_processed * 100 if total_processed > 0 else 0.0
+        
+        # 결과 출력
+        if do_once:
+            print(f"🧪 테스트 완료: {total_processed}개 댓글 처리, {total_hate_speech}개 혐오발언 ({hate_speech_ratio:.2f}%)")
+        else:
+            print(f"🏁 전체 완료: {total_processed}개 댓글 처리, {total_hate_speech}개 혐오발언 ({hate_speech_ratio:.2f}%)")
         
         return {
             'total_processed': total_processed,
@@ -162,8 +182,9 @@ class YouTubeCommentClassifier(BaseYouTubeClassifier):
             'failed_comments': failed_comments,
             'failed_count': len(failed_comments),
             'current_offset': current_offset,
-            'start_offset': offset
-            }
+            'start_offset': offset,
+            'test_mode': do_once  # 테스트 모드 여부 추가
+        }
 
             
     def _handle_classification_error(self, error: Exception, comment: dict, batch_count: int) -> dict:

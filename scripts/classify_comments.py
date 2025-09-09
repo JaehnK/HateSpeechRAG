@@ -16,9 +16,10 @@ if __name__ == "__main__":
     
     # 댓글 분류 실행
     result = analysis.classify_all_comments(
-        batch_size=1000,  # 배치 크기
+        batch_size=5,  # 배치 크기
         limit=None,       # 제한 없음 (전체 처리)
-        offset=0          # 시작점
+        offset=0,          # 시작점
+        do_once=True
     )
     
     # 결과를 JSON 파일로 저장

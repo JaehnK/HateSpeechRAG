@@ -1,3 +1,5 @@
+from typing import List, Dict, Any
+
 import psycopg2
 from psycopg2 import sql
 from psycopg2.extras import execute_values
@@ -383,7 +385,7 @@ class YouTubeDBSetup:
             if connection:
                 connection.close()
                 
-    def update_hate_speech_analysis(self, comment_id, analysis_result):
+    def update_hate_speech_analysis_by_id(self, comment_id, analysis_result):
         """혐오표현 분석 결과 업데이트"""
         connection = self.get_connection()
         if not connection:
@@ -427,6 +429,72 @@ class YouTubeDBSetup:
             if connection:
                 connection.close()
 
+    def update_hate_speech_analysis_by_comment(self, input_text:str, analysis_result:dict):
+        """
+        혐오표현 분석 결과 업데이트 (input_text 기준)
+    
+        Args:
+            input_text (str): 분석 대상 텍스트
+            analysis_result (Dict[str, Any]): 혐오표현 분석 결과 딕셔너리
+                - is_hate_speech (bool): 혐오표현 여부
+                - categories (List[str]): 혐오표현 카테고리들
+                - similar_cases_used (List[str]): 참조한 유사 사례들
+                - target_group (Optional[str]): 혐오 대상 집단
+                - hate_type (Optional[str]): 혐오 유형
+                - used_prompt (Optional[str]): 사용된 프롬프트
+        
+        Returns:
+            bool: 업데이트 성공 여부
+        """
+        connection = self.get_connection()
+        if not connection:
+            return False
+        
+        try:
+            cursor = connection.cursor()
+            
+            update_sql = """
+                UPDATE comments 
+                SET 
+                    is_hate_speech = %s,
+                    categories = %s,
+                    similar_cases_used = %s,
+                    target_group = %s,
+                    hate_type = %s,
+                    used_prompt = %s
+                WHERE  comment_text = %s;
+            """
+            
+            cursor.execute(update_sql, (
+                analysis_result.get('is_hate_speech'),
+                analysis_result.get('categories'),  # 배열
+                analysis_result.get('similar_cases_used'),  # 배열
+                analysis_result.get('target_group'),
+                analysis_result.get('hate_type'),
+                analysis_result.get('used_prompt'),
+                input_text  # WHERE 조건을 input_text로 변경
+            ))
+            
+            connection.commit()
+            
+            # 업데이트된 행의 개수 확인 (선택사항)
+            if cursor.rowcount == 0:
+                print(f"⚠️ 해당 텍스트를 찾을 수 없습니다: {input_text}")
+                return False
+            else:
+                print(f"✅ {cursor.rowcount}개 행이 업데이트되었습니다.")
+                return True
+            
+        except Exception as e:
+            print(f"❌ 혐오표현 분석 결과 업데이트 실패: {e}")
+            connection.rollback()
+            return False
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+            
     def get_data_count(self):
         """저장된 데이터 개수 확인"""
         connection = self.get_connection()
@@ -566,6 +634,7 @@ class YouTubeDBSetup:
                 if not rows:
                     break
                 
+                batch_of_comments = []
                 for row in rows:
                     comment = {
                         'comment_id': row[0],
@@ -592,8 +661,10 @@ class YouTubeDBSetup:
                             'used_prompt': row[17]
                         })
                     
-                    yield comment
+                    batch_of_comments.append(comment)
                 
+                yield batch_of_comments
+
                 offset += batch_size
                 
             except Exception as e:
@@ -795,8 +866,8 @@ class YouTubeDBSetup:
             if connection:
                 connection.close()
 
-    def update_hate_speech_analysis_batch(self, analysis_results: list):
-        """혐오표현 분석 결과를 벌크로 업데이트"""
+    def update_hate_speech_analysis_batch(self, analysis_results: List[Dict[str, Any]]):
+        """혐오표현 분석 결과를 고속 벌크 업데이트 (execute_values 사용)"""
         if not analysis_results:
             return {'success_count': 0, 'failed_count': 0, 'failed_comments': []}
         
@@ -804,47 +875,76 @@ class YouTubeDBSetup:
         if not connection:
             return {'success_count': 0, 'failed_count': 0, 'failed_comments': []}
         
+        cursor = None
         try:
             cursor = connection.cursor()
             
-            success_count = 0
+            # 데이터 준비 및 검증
+            update_data = []
             failed_comments = []
             
-            for result in analysis_results:
-                try:
-                    update_sql = """
-                        UPDATE comments 
-                        SET 
-                            is_hate_speech = %s,
-                            categories = %s,
-                            similar_cases_used = %s,
-                            target_group = %s,
-                            hate_type = %s,
-                            used_prompt = %s
-                        WHERE comment_id = %s;
-                    """
-                    
-                    cursor.execute(update_sql, (
-                        result['is_hate_speech'],
-                        result['categories'],
-                        result['similar_cases_used'],
-                        result['target_group'],
-                        result['hate_type'],
-                        result['used_prompt'],
-                        result['comment_id']
-                    ))
-                    
-                    success_count += 1
-                    
-                except Exception as e:
-                    print(f" 댓글 {result['comment_id']} 업데이트 실패: {e}")
+            for i, result in enumerate(analysis_results):
+                if 'comment_id' not in result:
                     failed_comments.append({
-                        'comment_id': result['comment_id'],
-                        'error': str(e)
+                        'index': i,
+                        'comment_id': result.get('comment_id', f'Unknown_{i}'),
+                        'error': 'comment_id가 없습니다'
                     })
+                    continue
+                
+                # 배열 데이터 안전하게 처리
+                categories = result.get('categories', [])
+                similar_cases_used = result.get('similar_cases_used', [])
+                
+                if categories is None:
+                    categories = []
+                if similar_cases_used is None:
+                    similar_cases_used = []
+                    
+                update_data.append((
+                    result.get('is_hate_speech'),
+                    categories,  # 리스트로 전달
+                    similar_cases_used,  # 리스트로 전달
+                    result.get('target_group'),
+                    result.get('hate_type'),
+                    result.get('used_prompt', result.get('prompt')),
+                    result['comment_id']
+                ))
             
-            # 모든 업데이트 완료 후 커밋
-            connection.commit()
+            success_count = 0
+            if update_data:
+                # 개별 업데이트로 처리 (execute_values는 UPDATE에서 복잡함)
+                for data in update_data:
+                    try:
+                        update_sql = """
+                            UPDATE comments 
+                            SET 
+                                is_hate_speech = %s,
+                                categories = %s,
+                                similar_cases_used = %s,
+                                target_group = %s,
+                                hate_type = %s,
+                                used_prompt = %s
+                            WHERE comment_id = %s;
+                        """
+                        
+                        cursor.execute(update_sql, data)
+                        
+                        if cursor.rowcount > 0:
+                            success_count += 1
+                        else:
+                            failed_comments.append({
+                                'comment_id': data[6],  # comment_id
+                                'error': '해당 comment_id를 찾을 수 없음'
+                            })
+                            
+                    except Exception as e:
+                        failed_comments.append({
+                            'comment_id': data[6] if len(data) > 6 else 'Unknown',
+                            'error': str(e)
+                        })
+                
+                connection.commit()
             
             return {
                 'success_count': success_count,
@@ -853,14 +953,38 @@ class YouTubeDBSetup:
             }
             
         except Exception as e:
-            print(f" 벌크 업데이트 실패: {e}")
-            connection.rollback()
-            return {'success_count': 0, 'failed_count': len(analysis_results), 'failed_comments': analysis_results}
+            print(f"❌ 고속 벌크 업데이트 실패: {e}")
+            if connection:
+                connection.rollback()
+            return {
+                'success_count': 0,
+                'failed_count': len(analysis_results),
+                'failed_comments': [{'comment_id': 'Unknown', 'error': str(e)}]
+            }
         finally:
             if cursor:
                 cursor.close()
             if connection:
                 connection.close()
+
+    def get_all_comments(self, verbose=True):
+        """DB의 모든 댓글 조회 (분석 결과 포함)"""
+        all_comments = []
+        
+        try:
+            for batch in self.get_comments_generator(batch_size=1000, include_analysis=True):
+                all_comments.extend(batch)
+                if verbose and len(all_comments) % 10000 == 0:
+                    print(f"📊 {len(all_comments):,}개 댓글 로드 완료...")
+            
+            if verbose:
+                print(f"✅ 총 {len(all_comments):,}개 댓글 조회 완료!")
+            
+            return all_comments
+            
+        except Exception as e:
+            print(f"❌ 모든 댓글 조회 실패: {e}")
+            return []
 
 # 사용 예시
 if __name__ == "__main__":
