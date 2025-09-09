@@ -210,7 +210,9 @@ hate_speech_vectorstore/
 
 # langfuse/*
 
+.vscode/
 data/
+logs/
 *.json
 *.log
 *.gexf
