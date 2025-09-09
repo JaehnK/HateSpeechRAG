@@ -9,6 +9,13 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 # from langchain_teddynote import logging
 from dotenv import load_dotenv
 
+import sys
+import os
+# 프로젝트 루트를 sys.path에 추가
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
 from src.dao import YouTubeDBSetup, VectorStoreDao
 from src.embedding import EmbeddingModelFactory
 from src.llm import LLMServiceFactory, HateSpeechRAGChain
@@ -137,6 +144,14 @@ class YouTubeScriptClassifier(BaseYouTubeClassifier):
         # 4. ThreadPoolExecutor로 병렬 분류 처리
         classifications = self._classify_sentences_async(sentences)
         
+        # 5. DB 업로드 (성공한 결과만 저장)
+        try:
+            successful = [c for c in classifications if c and c.get('classification_result')]
+            if successful:
+                self.youtube_dao.save_script_classifications(video_id, successful)
+        except Exception as e:
+            print(f"Error saving classifications to DB: {e}")
+        
         return {
             'video_id': video_id,
             'total_sentences': len(sentences),
@@ -211,20 +226,44 @@ class YouTubeScriptClassifier(BaseYouTubeClassifier):
 
 if "__main__" == __name__:
     from pprint import pprint
-    classifier = YouTubeScriptClassifier()
     
-    # print(classifier._load_script("k_byR7RQ-PI", "/home/jaehun/lab/YouTubeHateSpeech"))
+    # .env 파일 로드
+    load_dotenv()
+    
+    # YouTube DAO 및 RAG Chain 초기화
+    youtube_dao = YouTubeDBSetup()
+    
+    # VectorStoreDao 초기화 및 리트리버 준비
+    vectorstore_dao = VectorStoreDao(
+        persist_directory="../../data/vectorstores/hate_speech_vectorstore",
+        embedding_model=EmbeddingModelFactory.create_embedding_model('upstage'),
+        collection_name="hate_speech_collection"
+    )
+    vectorstore_dao.create_vector_store()
+    vectorstore_dao.initialize_retriever(retriever_type="basic", k=5)
+
+    # RAG Chain 생성 (VectorStoreDao 주입)
+    rag_chain = HateSpeechRAGChain(dao=vectorstore_dao, llm="openai", model_name="gpt-5-mini")
+    
+    # Classifier 초기화
+    classifier = YouTubeScriptClassifier(youtube_dao, rag_chain)
+    
+    print(classifier._load_script("k_byR7RQ-PI", "/home/jaehun/lab/YouTubeHateSpeech"))
     results = classifier.classify_video_script("k_byR7RQ-PI", "/home/jaehun/lab/YouTubeHateSpeech")
     for _, result in enumerate( results['classifications']):
         print("\n")
-        pprint(f"입력 텍스트: {result['classification_result'].input_text}")
-        pprint(f"혐오 발언 여부: {result['classification_result'].is_hate_speech}")
-        pprint(f"혐오 카테고리: {result['classification_result'].categories}")
-        pprint(f"신뢰성: {result['classification_result'].evidence_strength}")
-        pprint(f"추론 이유: {result['classification_result'].reasoning}")
-        pprint(f"혐오 타입: {result['classification_result'].hate_type}")
+        cr = result.get('classification_result')
+        if not cr:
+            pprint(f"분류 실패: {result.get('error', 'unknown error')}")
+            continue
+        pprint(f"입력 텍스트: {cr.input_text}")
+        pprint(f"혐오 발언 여부: {cr.is_hate_speech}")
+        pprint(f"혐오 카테고리: {cr.categories}")
+        pprint(f"신뢰성: {cr.evidence_strength}")
+        pprint(f"추론 이유: {cr.reasoning}")
+        pprint(f"혐오 타입: {cr.hate_type}")
         print("\n")
         print("===="*20)
-        pprint(f"프롬프트: {result['classification_result'].prompt}")
+        pprint(f"프롬프트: {cr.prompt}")
         print("===="*20)
     # print(result[0]['classifications'].prompt)

@@ -810,6 +810,72 @@ class YouTubeDBSetup:
             if connection:
                 connection.close()
 
+    def save_script_classifications(self, video_id: str, classifications: List[Dict[str, Any]]) -> bool:
+        """스크립트 문장 분류 결과를 scriptresult 테이블에 업서트 저장"""
+        connection = self.get_connection()
+        if not connection:
+            return False
+        
+        try:
+            cursor = connection.cursor()
+            insert_sql = """
+                INSERT INTO scriptresult (
+                    video_id, script_index, input_text, is_hate_speech, categories,
+                    evidence_strength, reasoning, similar_cases_used, target_group,
+                    hate_type, used_prompt
+                ) VALUES %s
+                ON CONFLICT (video_id, script_index)
+                DO UPDATE SET
+                    input_text = EXCLUDED.input_text,
+                    is_hate_speech = EXCLUDED.is_hate_speech,
+                    categories = EXCLUDED.categories,
+                    evidence_strength = EXCLUDED.evidence_strength,
+                    reasoning = EXCLUDED.reasoning,
+                    similar_cases_used = EXCLUDED.similar_cases_used,
+                    target_group = EXCLUDED.target_group,
+                    hate_type = EXCLUDED.hate_type,
+                    used_prompt = EXCLUDED.used_prompt,
+                    updated_at = CURRENT_TIMESTAMP;
+            """
+            values = []
+            for item in classifications:
+                result = item.get('classification_result')
+                if not result:
+                    continue
+                categories = result.categories if getattr(result, 'categories', None) is not None else []
+                similar_cases_used = result.similar_cases_used if getattr(result, 'similar_cases_used', None) is not None else []
+                values.append((
+                    video_id,
+                    item.get('sentence_index'),
+                    getattr(result, 'input_text', None),
+                    getattr(result, 'is_hate_speech', None),
+                    categories,
+                    getattr(result, 'evidence_strength', None),
+                    getattr(result, 'reasoning', None),
+                    similar_cases_used,
+                    getattr(result, 'target_group', None),
+                    getattr(result, 'hate_type', None),
+                    getattr(result, 'prompt', None)
+                ))
+            
+            if not values:
+                print("⚠️ 저장할 분류 결과가 없습니다.")
+                return False
+            
+            execute_values(cursor, insert_sql, values)
+            connection.commit()
+            print(f"✅ scriptresult 업서트 완료: {len(values)}건")
+            return True
+        except Exception as e:
+            print(f"❌ scriptresult 저장 실패: {e}")
+            connection.rollback()
+            return False
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+
     def get_unanalyzed_comments_cursor(self, batch_size: int = 1000, last_comment_id: str = None):
         """커서 기반으로 미분석 댓글 조회 (성능 최적화)"""
         connection = self.get_connection()
