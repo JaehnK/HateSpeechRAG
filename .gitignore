@@ -209,3 +209,8 @@ hate_speech_vectorstore/*
 hate_speech_vectorstore/
 
 # langfuse/*
+
+data/
+*.json
+*.log
+*.gexf
