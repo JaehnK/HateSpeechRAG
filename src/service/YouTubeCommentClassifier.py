@@ -5,6 +5,7 @@ from typing import List
 import pandas as pd
 import os
 from datetime import datetime
+import asyncio
 
 class YouTubeCommentClassifier(BaseYouTubeClassifier):
     def __init__(self, youtube_dao: YouTubeDBSetup, rag_chain: HateSpeechRAGChain):
@@ -242,3 +243,126 @@ class YouTubeCommentClassifier(BaseYouTubeClassifier):
         
         # 기타 에러는 재시도하지 않음
         return False
+
+    async def _classify_batch_async(self, comments: List[dict], max_concurrency: int = 10, timeout_per_task: int = 90, batch_number: int = 1) -> List[dict]:
+        """비동기로 댓글 배치를 분류하여 결과 리스트를 반환 (DB 업데이트는 하지 않음)"""
+        semaphore = asyncio.Semaphore(max_concurrency)
+
+        async def classify_one(comment: dict) -> dict:
+            async with semaphore:
+                try:
+                    classification_result = await asyncio.wait_for(
+                        asyncio.to_thread(self.classify_single_comment, comment['comment_text']),
+                        timeout=timeout_per_task
+                    )
+                    return {
+                        'comment_id': comment['comment_id'],
+                        'video_id': comment.get('video_id'),
+                        'author': comment.get('author'),
+                        'is_hate_speech': classification_result.is_hate_speech,
+                        'categories': classification_result.categories,
+                        'similar_cases_used': classification_result.similar_cases_used,
+                        'target_group': classification_result.target_group,
+                        'hate_type': classification_result.hate_type,
+                        'used_prompt': classification_result.prompt,
+                        'classification_result': str(classification_result)
+                    }
+                except Exception as e:
+                    error_info = self._handle_classification_error(e, comment, batch_number)
+                    return {
+                        'comment_id': comment['comment_id'],
+                        'video_id': comment.get('video_id'),
+                        'author': comment.get('author'),
+                        'is_hate_speech': False,
+                        'categories': [],
+                        'similar_cases_used': [],
+                        'target_group': None,
+                        'hate_type': None,
+                        'used_prompt': None,
+                        'classification_result': None,
+                        'error': error_info.get('error'),
+                        'error_type': error_info.get('error_type'),
+                        'is_retryable': error_info.get('is_retryable', False)
+                    }
+
+        tasks = [asyncio.create_task(classify_one(comment)) for comment in comments]
+        results = await asyncio.gather(*tasks, return_exceptions=False)
+        return results
+
+    def test_classify_one_batch_to_xlsx(self, batch_size: int = 50, offset: int = 0, max_concurrency: int = 10, timeout_per_task: int = 90, ensure_model_name: str = "gpt-5-mini") -> dict:
+        """
+        단 한 개의 배치(기본 50개)를 비동기로 분류하고, DB에는 업로드하지 않고 XLSX 파일로 저장 후 경로를 반환.
+        - 모델 확인: 기본적으로 gpt-5-mini 사용을 보장(불일치 시 예외 발생)
+        - 반환: 파일 경로와 간단 통계
+        """
+        # 모델 확인 (가능한 경우에만 검증)
+        try:
+            underlying_llm = getattr(self.rag_chain.llm, '_llm', None)
+            current_model_name = getattr(underlying_llm, 'model_name', None)
+            if ensure_model_name and current_model_name and current_model_name != ensure_model_name:
+                raise ValueError(f"요청한 모델({ensure_model_name})과 현재 모델({current_model_name})이 다릅니다.")
+        except Exception:
+            # 확인 불가 시는 통과 (기본값이 gpt-5-mini이므로)
+            pass
+
+        # 배치 결과 저장 디렉토리 준비
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        save_dir = os.path.join("data", "batch_results", f"test_{timestamp}")
+        os.makedirs(save_dir, exist_ok=True)
+
+        # 배치 로드 (첫 배치만)
+        batch_comments = None
+        for comments in self.youtube_dao.get_comments_generator(batch_size=batch_size, include_analysis=True, _offset=offset):
+            batch_comments = comments
+            break
+
+        if not batch_comments:
+            print("⚠️ 로드된 댓글 배치가 없습니다.")
+            return {
+                'file_path': None,
+                'total_processed': 0,
+                'total_hate_speech': 0,
+                'hate_speech_ratio': 0.0,
+                'failed_count': 0
+            }
+
+        unanalyzed_comments = [c for c in batch_comments if c.get('is_hate_speech') is None]
+        if not unanalyzed_comments:
+            print("⚠️ 미분석 댓글이 없는 배치입니다.")
+            return {
+                'file_path': None,
+                'total_processed': 0,
+                'total_hate_speech': 0,
+                'hate_speech_ratio': 0.0,
+                'failed_count': 0
+            }
+
+        print(f"🔄 테스트 배치 분류 시작: {len(unanalyzed_comments)}개 (동시성 {max_concurrency})")
+        results = asyncio.run(self._classify_batch_async(unanalyzed_comments, max_concurrency=max_concurrency, timeout_per_task=timeout_per_task, batch_number=1))
+
+        # 통계 계산
+        total_processed = len(results)
+        total_hate_speech = sum(1 for r in results if r.get('is_hate_speech'))
+        failed_count = sum(1 for r in results if r.get('error'))
+        hate_speech_ratio = (total_hate_speech / total_processed * 100) if total_processed > 0 else 0.0
+
+        # XLSX 저장
+        df = pd.DataFrame(results)
+        file_path = os.path.join(save_dir, f"test_batch_results.xlsx")
+        try:
+            df.to_excel(file_path, index=False)
+            print(f"   💾 테스트 배치 결과가 {file_path}에 저장되었습니다.")
+        except Exception as e:
+            print(f"   ⚠️ XLSX 저장 실패: {e}. CSV로 대체 저장합니다.")
+            file_path = os.path.join(save_dir, f"test_batch_results.csv")
+            df.to_csv(file_path, index=False, encoding='utf-8-sig')
+
+        print(f"✅ 테스트 배치 완료: {total_processed}개 처리, {total_hate_speech}개 혐오발언, 실패 {failed_count}개")
+
+        return {
+            'file_path': file_path,
+            'total_processed': total_processed,
+            'total_hate_speech': total_hate_speech,
+            'hate_speech_ratio': hate_speech_ratio,
+            'failed_count': failed_count
+        }

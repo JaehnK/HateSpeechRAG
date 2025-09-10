@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Any
+from typing import List, Any, Optional
 from langchain.schema import Document
 from langchain.retrievers import EnsembleRetriever
 from langchain_community.retrievers import BM25Retriever
@@ -13,11 +13,13 @@ class BaseRetriever(ABC):
     리트리버를 위한 추상 베이스 클래스
     """
     
-    def __init__(self, vector_store: VectorStore, k: int = 5):
+    def __init__(self, vector_store: VectorStore, k: int = 5, score_threshold: Optional[float] = 0.5, higher_score_is_better: bool = True):
         self.vector_store = vector_store
         self.k = k
         self._retriever = None
         self._type = None
+        self.score_threshold = score_threshold
+        self.higher_score_is_better = higher_score_is_better
     
     @abstractmethod
     def _build_retriever(self) -> Any:
@@ -48,7 +50,13 @@ class BaseRetriever(ABC):
         """
         if hasattr(self.retriever, 'similarity_search_with_score'):
             print(f"{self._type} Retriever: Retreive with scores")
-            return self.retriever.similarity_search_with_score(query, k=self.k)
+            results = self.retriever.similarity_search_with_score(query, k=self.k)
+            if self.score_threshold is not None:
+                if self.higher_score_is_better:
+                    results = [(doc, score) for doc, score in results if score >= self.score_threshold]
+                else:
+                    results = [(doc, score) for doc, score in results if score <= self.score_threshold]
+            return results
         else:
             # 점수가 없는 경우 기본 검색 결과 반환
             print(f"{self._type} Retriever: Invoke without Score")
@@ -61,8 +69,8 @@ class VectorStoreRetriever(BaseRetriever):
     기본 벡터스토어 리트리버
     """
     
-    def __init__(self, vector_store: VectorStore, k: int = 5, search_type: str = "similarity"):
-        super().__init__(vector_store, k)
+    def __init__(self, vector_store: VectorStore, k: int = 5, search_type: str = "similarity", score_threshold: Optional[float] = 0.5, higher_score_is_better: bool = True):
+        super().__init__(vector_store, k, score_threshold=score_threshold, higher_score_is_better=higher_score_is_better)
         self.search_type = search_type
         self._type = "VectorStore"
     
@@ -82,6 +90,11 @@ class VectorStoreRetriever(BaseRetriever):
         try:
             results = self.vector_store.similarity_search_with_score(query, k=self.k)
             # print(f"{self._type} Retriever: Retrieved with scores")
+            if self.score_threshold is not None:
+                if self.higher_score_is_better:
+                    results = [(doc, score) for doc, score in results if score >= self.score_threshold]
+                else:
+                    results = [(doc, score) for doc, score in results if score <= self.score_threshold]
             return results
         except Exception as e:
             print(f"{self._type} Retriever: Error getting scores - {e}")
@@ -203,7 +216,9 @@ class RetrieverFactory:
         
         if retriever_type == "basic":
             search_type = kwargs.get("search_type", "similarity")
-            return VectorStoreRetriever(vector_store, k, search_type)
+            score_threshold = kwargs.get("score_threshold", 0.5)
+            higher_score_is_better = kwargs.get("higher_score_is_better", True)
+            return VectorStoreRetriever(vector_store, k, search_type, score_threshold, higher_score_is_better)
         
         elif retriever_type == "mmr":
             fetch_k = kwargs.get("fetch_k", 20)
@@ -229,26 +244,5 @@ class RetrieverFactory:
 
 
 if __name__ == "__main__":
-    # 예시 사용법
-    
-    # 기본 리트리버
-    basic_retriever = RetrieverFactory.create_retriever("basic", vector_store, k=5)
-    
-    # MMR 리트리버
-    mmr_retriever = RetrieverFactory.create_retriever(
-        "mmr", vector_store, k=5, fetch_k=20, lambda_mult=0.7
-    )
-    
-    # 앙상블 리트리버
-    ensemble_retriever = RetrieverFactory.create_retriever(
-        "ensemble", vector_store, k=5, documents=documents, weights=[0.7, 0.3]
-    )
-    
-    # Self Query 리트리버
-    self_query_retriever = RetrieverFactory.create_retriever(
-        "self_query", vector_store, k=5, llm=llm
-    )
-    
-    # 검색 실행
-    results = basic_retriever.retrieve("혐오 표현을 찾아주세요")
-    print(f"검색 결과: {len(results)}개 문서")
+    # 예시 사용법은 문서화 목적으로만 유지합니다. 실제 실행 예시는 README 또는 테스트를 참고하세요.
+    pass

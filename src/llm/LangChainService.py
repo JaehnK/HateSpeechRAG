@@ -92,11 +92,11 @@ class HateSpeechClassification(BaseModel):
         default_factory=list
     )
     
-    evidence_strength: float = Field(
-        description="증거 강도 (검색 결과 기반, 0.0-1.0)",
-        ge=0.0,
-        le=1.0
-    )
+    # evidence_strength: float = Field(
+    #     description="증거 강도 (검색 결과 기반, 0.0-1.0)",
+    #     ge=0.0,
+    #     le=1.0
+    # )
     
     reasoning: str = Field(description="분류 근거 및 설명")
     
@@ -161,7 +161,7 @@ class HateSpeechRAGChain:
 
 정체성: 출신지역, 인종, 성적지향, 종교 등 보호 속성을 기반으로 한 비하 ("짱깨", "일베충", "리짜이밍")
 
-욕설: 직접적인 욕설이 포함된 표현 ("시발", "새끼", "좆같다", "개XX", "개판", "염병")
+욕설: 직접적인 욕설이 포함된 표현 ("시발", "새끼", "좆같다", "개새끼", "개판", "염병")
 
 기타: 위 카테고리에 해당하지 않는 일반 비하·조롱, 정치적 별명/조롱 ("문재앙", "이명박근혜", "문빠들")
 
